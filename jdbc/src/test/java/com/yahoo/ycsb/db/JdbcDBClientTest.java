@@ -1,20 +1,18 @@
 /**
  * Copyright (c) 2015 Yahoo! Inc. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License. See accompanying LICENSE file.
  */
-
 package com.yahoo.ycsb.db;
 
 import static org.junit.Assert.*;
@@ -33,7 +31,9 @@ import java.util.Vector;
 /**
  * Created by kruthar on 11/2/15.
  */
-public class JdbcDBClientTest {
+public class JdbcDBClientTest
+{
+
     private static final String TEST_DB_DRIVER = "org.hsqldb.jdbc.JDBCDriver";
     private static final String TEST_DB_URL = "jdbc:hsqldb:mem:ycsb";
     private static final String TEST_DB_USER = "sa";
@@ -48,7 +48,8 @@ public class JdbcDBClientTest {
     private static JdbcDBClient jdbcDBClient = null;
 
     @BeforeClass
-    public static void setup() {
+    public static void setup()
+    {
         try {
             jdbcConnection = DriverManager.getConnection(TEST_DB_URL);
             jdbcDBClient = new JdbcDBClient();
@@ -70,7 +71,8 @@ public class JdbcDBClientTest {
     }
 
     @AfterClass
-    public static void teardown() {
+    public static void teardown()
+    {
         try {
             if (jdbcConnection != null) {
                 jdbcConnection.close();
@@ -78,7 +80,7 @@ public class JdbcDBClientTest {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
+
         try {
             if (jdbcDBClient != null) {
                 jdbcDBClient.cleanup();
@@ -89,23 +91,24 @@ public class JdbcDBClientTest {
     }
 
     @Before
-    public void prepareTest() {
+    public void prepareTest()
+    {
         try {
             DatabaseMetaData metaData = jdbcConnection.getMetaData();
             ResultSet tableResults = metaData.getTables(null, null, TABLE_NAME, null);
             if (tableResults.next()) {
                 // If the table already exists, just truncate it
                 jdbcConnection.prepareStatement(
-                    String.format("TRUNCATE TABLE %s", TABLE_NAME)
+                        String.format("TRUNCATE TABLE %s", TABLE_NAME)
                 ).execute();
             } else {
                 // If the table does not exist then create it
                 StringBuilder createString = new StringBuilder(
-                    String.format("CREATE TABLE %s (%s VARCHAR(100) PRIMARY KEY", TABLE_NAME, KEY_FIELD)
+                        String.format("CREATE TABLE %s (%s VARCHAR(100) PRIMARY KEY", TABLE_NAME, KEY_FIELD)
                 );
                 for (int i = 0; i < NUM_FIELDS; i++) {
                     createString.append(
-                        String.format(", %s%d VARCHAR(100)", FIELD_PREFIX, i)
+                            String.format(", %s%d VARCHAR(100)", FIELD_PREFIX, i)
                     );
                 }
                 createString.append(")");
@@ -118,10 +121,11 @@ public class JdbcDBClientTest {
     }
 
     /*
-        This is a copy of buildDeterministicValue() from core:com.yahoo.ycsb.workloads.CoreWorkload.java.
-        That method is neither public nor static so we need a copy.
+     This is a copy of buildDeterministicValue() from core:com.yahoo.ycsb.workloads.CoreWorkload.java.
+     That method is neither public nor static so we need a copy.
      */
-    private String buildDeterministicValue(String key, String fieldkey) {
+    private String buildDeterministicValue(String key, String fieldkey)
+    {
         int size = FIELD_LENGTH;
         StringBuilder sb = new StringBuilder(size);
         sb.append(key);
@@ -137,9 +141,10 @@ public class JdbcDBClientTest {
     }
 
     /*
-        Inserts a row of deterministic values for the given insertKey using the jdbcDBClient.
+     Inserts a row of deterministic values for the given insertKey using the jdbcDBClient.
      */
-    private HashMap<String, ByteIterator> insertRow(String insertKey) {
+    private HashMap<String, ByteIterator> insertRow(String insertKey)
+    {
         HashMap<String, ByteIterator> insertMap = new HashMap<String, ByteIterator>();
         for (int i = 0; i < 3; i++) {
             insertMap.put(FIELD_PREFIX + i, new StringByteIterator(buildDeterministicValue(insertKey, FIELD_PREFIX + i)));
@@ -150,13 +155,14 @@ public class JdbcDBClientTest {
     }
 
     @Test
-    public void insertTest() {
+    public void insertTest()
+    {
         try {
             String insertKey = "user0";
             HashMap<String, ByteIterator> insertMap = insertRow(insertKey);
 
             ResultSet resultSet = jdbcConnection.prepareStatement(
-                String.format("SELECT * FROM %s", TABLE_NAME)
+                    String.format("SELECT * FROM %s", TABLE_NAME)
             ).executeQuery();
 
             // Check we have a result Row
@@ -179,11 +185,12 @@ public class JdbcDBClientTest {
     }
 
     @Test
-    public void updateTest() {
+    public void updateTest()
+    {
         try {
             String preupdateString = "preupdate";
             StringBuilder fauxInsertString = new StringBuilder(
-                String.format("INSERT INTO %s VALUES(?", TABLE_NAME)
+                    String.format("INSERT INTO %s VALUES(?", TABLE_NAME)
             );
             for (int i = 0; i < NUM_FIELDS; i++) {
                 fauxInsertString.append(",?");
@@ -210,7 +217,7 @@ public class JdbcDBClientTest {
             jdbcDBClient.update(TABLE_NAME, "user1", updateMap);
 
             ResultSet resultSet = jdbcConnection.prepareStatement(
-                String.format("SELECT * FROM %s ORDER BY %s", TABLE_NAME, KEY_FIELD)
+                    String.format("SELECT * FROM %s ORDER BY %s", TABLE_NAME, KEY_FIELD)
             ).executeQuery();
 
             // Ensure that user0 record was not changed
@@ -243,7 +250,8 @@ public class JdbcDBClientTest {
     }
 
     @Test
-    public void readTest() {
+    public void readTest()
+    {
         String insertKey = "user0";
         HashMap<String, ByteIterator> insertMap = insertRow(insertKey);
         HashSet<String> readFields = new HashSet<String>();
@@ -253,7 +261,7 @@ public class JdbcDBClientTest {
         readFields.add("FIELD0");
         jdbcDBClient.read(TABLE_NAME, insertKey, readFields, readResultMap);
         assertEquals("Assert that result has correct number of fields", readFields.size(), readResultMap.size());
-        for (String field: readFields) {
+        for (String field : readFields) {
             // TODO: This will fail until the fix is made to insert and update fields in the correct order.
             // TODO: Uncomment this assertEquals when the fix is made.
             //assertEquals("Assert " + field + " was read correctly", insertMap.get(field), readResultMap.get(field));
@@ -266,7 +274,7 @@ public class JdbcDBClientTest {
         readFields.add("FIELD2");
         jdbcDBClient.read(TABLE_NAME, insertKey, readFields, readResultMap);
         assertEquals("Assert that result has correct number of fields", readFields.size(), readResultMap.size());
-        for (String field: readFields) {
+        for (String field : readFields) {
             // TODO: This will fail until the fix is made to insert and update fields in the correct order.
             // TODO: Uncomment this assertEquals when the fix is made.
             //assertEquals("Assert " + field + " was read correctly", insertMap.get(field), readResultMap.get(field));
@@ -274,7 +282,8 @@ public class JdbcDBClientTest {
     }
 
     @Test
-    public void deleteTest() {
+    public void deleteTest()
+    {
         try {
             insertRow("user0");
             String deleteKey = "user1";
@@ -284,7 +293,7 @@ public class JdbcDBClientTest {
             jdbcDBClient.delete(TABLE_NAME, deleteKey);
 
             ResultSet resultSet = jdbcConnection.prepareStatement(
-                String.format("SELECT * FROM %s", TABLE_NAME)
+                    String.format("SELECT * FROM %s", TABLE_NAME)
             ).executeQuery();
 
             int totalRows = 0;
@@ -303,7 +312,8 @@ public class JdbcDBClientTest {
     }
 
     @Test
-    public void scanTest() throws SQLException {
+    public void scanTest() throws SQLException
+    {
         HashMap<String, HashMap<String, ByteIterator>> keyMap = new HashMap<String, HashMap<String, ByteIterator>>();
         for (int i = 0; i < 5; i++) {
             String insertKey = KEY_PREFIX + i;
@@ -322,9 +332,9 @@ public class JdbcDBClientTest {
         assertEquals("Assert the correct number of results rows were returned", resultRows, resultVector.size());
         // Check each vector row to make sure we have the correct fields
         int testIndex = startIndex;
-        for (HashMap<String, ByteIterator> result: resultVector) {
+        for (HashMap<String, ByteIterator> result : resultVector) {
             assertEquals("Assert that this row has the correct number of fields", fieldSet.size(), result.size());
-            for (String field: fieldSet) {
+            for (String field : fieldSet) {
                 // TODO: This will fail until the fix is made to insert and update fields in the correct order.
                 // TODO: Uncomment this assertEquals when the fix is made.
                 //assertEquals("Assert this field is correct in this row", keyMap.get(KEY_PREFIX + testIndex).get(field), result.get(field));
