@@ -54,6 +54,45 @@ import java.util.concurrent.ConcurrentMap;
 public class JdbcDBClient extends DB implements JdbcDBClientConstants
 {
 
+    // copied from https://github.com/akon-dey/YCSB/blob/master/jdbc/src/main/java/com/yahoo/ycsb/db/JdbcDBClient.java
+    @Override
+    public void start() throws DBException
+    {
+        super.start();
+        try {
+            conns.get(0).setAutoCommit(false); // @NOTE:: shegufta ahsan :: I am confused, why connection '0' is hardcoded here ?
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new DBException(e);
+        }
+    }
+
+    // copied from https://github.com/akon-dey/YCSB/blob/master/jdbc/src/main/java/com/yahoo/ycsb/db/JdbcDBClient.java
+    @Override
+    public void commit() throws DBException
+    {
+        super.commit();
+        try {
+            conns.get(0).commit(); // @NOTE:: shegufta ahsan :: I am confused, why connection '0' is hardcoded here ?
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new DBException(e);
+        }
+    }
+
+    // copied from https://github.com/akon-dey/YCSB/blob/master/jdbc/src/main/java/com/yahoo/ycsb/db/JdbcDBClient.java
+    @Override
+    public void abort() throws DBException
+    {
+        super.abort();
+        try {
+            conns.get(0).rollback(); // @NOTE:: shegufta ahsan :: I am confused, why connection '0' is hardcoded here ?
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new DBException(e);
+        }
+    }
+
     private ArrayList<Connection> conns;
     private boolean initialized = false;
     private Properties props;
