@@ -310,7 +310,7 @@ class ClientThread extends Thread
             return;
         }
 
-    //NOTE: Switching to using nanoTime and parkNanos for time management here such that the measurements
+        //NOTE: Switching to using nanoTime and parkNanos for time management here such that the measurements
         // and the client thread have the same view on time.
         //spread the thread operations out so they don't all hit the DB at the same time
         // GH issue 4 - throws exception if _target>1 because random.nextInt argument must be >0
@@ -325,8 +325,23 @@ class ClientThread extends Thread
 
                 while (((_opcount == 0) || (_opsdone < _opcount)) && !_workload.isStopRequested()) {
 
-                    if (!_workload.doTransaction(_db, _workloadstate)) {
-                        break;
+                    /*
+                     if (!_workload.doTransaction(_db, _workloadstate)) {
+                     break;
+                     }*/
+                    /*
+                     * @NOTE: above commented code is the original YCSB code
+                     * @NOTE: the code below are collected from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/Client.java
+                     */
+                    try {
+                        _db.start();
+                        if (_workload.doTransaction(_db, _workloadstate)) {
+                            _db.commit();
+                        } else {
+                            _db.abort();
+                        }
+                    } catch (DBException e) {
+                        throw new WorkloadException(e);
                     }
 
                     _opsdone++;
@@ -338,10 +353,25 @@ class ClientThread extends Thread
 
                 while (((_opcount == 0) || (_opsdone < _opcount)) && !_workload.isStopRequested()) {
 
-                    if (!_workload.doInsert(_db, _workloadstate)) {
-                        break;
+                    /*
+                     if (!_workload.doInsert(_db, _workloadstate)) {
+                     break;
+                     }
+                     */
+                    /*
+                     * @NOTE: above commented code is the original YCSB code
+                     * @NOTE: the code below are collected from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/Client.java
+                     */
+                    try {
+                        _db.start();
+                        if (_workload.doInsert(_db, _workloadstate)) {
+                            _db.commit();
+                        } else {
+                            _db.abort();
+                        }
+                    } catch (DBException e) {
+                        throw new WorkloadException(e);
                     }
-
                     _opsdone++;
 
                     throttleNanos(startTimeNanos);
@@ -663,7 +693,7 @@ public class Client
             System.exit(0);
         }
 
-    //set up logging
+        //set up logging
         //BasicConfigurator.configure();
         //overwrite file properties with properties from the command line
         //Issue #5 - remove call to stringPropertyNames to make compilable under Java 1.5
@@ -834,6 +864,26 @@ public class Client
                 statusthread.join();
             } catch (InterruptedException e) {
             }
+        }
+
+        /*
+         * @NOTE: the code below are collected from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/Client.java
+         */
+        try {
+            DB db = DBFactory.newDB(dbname, props);
+            db.init();
+            if (workload.validate(db)) {
+                System.out.println("Database validation succeeded");
+            } else {
+                System.out.println("Database validation failed");
+            }
+        } catch (WorkloadException e) {
+            System.out.println("Database validation failed with error: " + e.getMessage());
+        } catch (UnknownDBException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (DBException e) {
+            e.printStackTrace();
         }
 
         try {
