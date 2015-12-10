@@ -1,24 +1,27 @@
 /**
  * Copyright (c) 2010 Yahoo! Inc. All rights reserved.
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- *
+ * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License. See accompanying LICENSE file.
  */
+
+/*
+ *@author: https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyWorkload.java
+ */
 package com.yahoo.ycsb.workloads;
 
 import java.util.Properties;
 
 import com.yahoo.ycsb.*;
-import com.yahoo.ycsb.generator.AcknowledgedCounterGenerator;
 import com.yahoo.ycsb.generator.CounterGenerator;
 import com.yahoo.ycsb.generator.DiscreteGenerator;
 import com.yahoo.ycsb.generator.ExponentialGenerator;
@@ -36,10 +39,9 @@ import com.yahoo.ycsb.measurements.Measurements;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Vector;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The core benchmark scenario. Represents a set of clients doing simple CRUD
@@ -77,7 +79,7 @@ import java.util.ArrayList;
  * ("ordered"), or in hashed order ("hashed") (default: hashed)
  * </ul>
  */
-public class CoreWorkload extends Workload
+public class ClosedEconomyWorkload extends Workload
 {
 
     /**
@@ -104,8 +106,6 @@ public class CoreWorkload extends Workload
 
     int fieldcount;
 
-    private List<String> fieldnames;
-
     /**
      * The name of the property for the field length distribution. Options are
      * "uniform", "zipfian" (favoring short records), "constant", and
@@ -130,6 +130,17 @@ public class CoreWorkload extends Workload
      * The default maximum length of a field in bytes.
      */
     public static final String FIELD_LENGTH_PROPERTY_DEFAULT = "100";
+    /**
+     * The name of the property for the total amount of money in the economy at
+     * the start.
+     */
+    public static final String TOTAL_CASH_PROPERTY = "total_cash";
+    /**
+     * The default total amount of money in the economy at the start.
+     */
+    public static final String TOTAL_CASH_PROPERTY_DEFAULT = "1000000";
+
+    public static final String OPERATION_COUNT_PROPERTY = "operationcount";
 
     /**
      * The name of a property that specifies the filename containing the field
@@ -172,23 +183,6 @@ public class CoreWorkload extends Workload
     public static final String WRITE_ALL_FIELDS_PROPERTY_DEFAULT = "false";
 
     boolean writeallfields;
-
-    /**
-     * The name of the property for deciding whether to check all returned data
-     * against the formation template to ensure data integrity.
-     */
-    public static final String DATA_INTEGRITY_PROPERTY = "dataintegrity";
-
-    /**
-     * The default value for the dataintegrity property.
-     */
-    public static final String DATA_INTEGRITY_PROPERTY_DEFAULT = "false";
-
-    /**
-     * Set to true if want to check correctness of reads. Must also be set to
-     * true during loading phase to function.
-     */
-    private boolean dataintegrity;
 
     /**
      * The name of the property for the proportion of transactions that are
@@ -308,7 +302,21 @@ public class CoreWorkload extends Workload
      */
     public static final String HOTSPOT_OPN_FRACTION_DEFAULT = "0.8";
 
+    private Measurements _measurements;
+    private Hashtable<String, String> _operations = new Hashtable<String, String>()
+    {
+        {
+            put("READ", "TX-READ");
+            put("UPDATE", "TX-UPDATE");
+            put("INSERT", "TX-INSERT");
+            put("SCAN", "TX-SCAN");
+            put("READMODIFYWRITE", "TX-READMODIFYWRITE");
+        }
+    };
+
     IntegerGenerator keysequence;
+
+    IntegerGenerator validation_keysequence;
 
     DiscreteGenerator operationchooser;
 
@@ -316,26 +324,33 @@ public class CoreWorkload extends Workload
 
     Generator fieldchooser;
 
-    AcknowledgedCounterGenerator transactioninsertkeysequence;
+    CounterGenerator transactioninsertkeysequence;
 
     IntegerGenerator scanlength;
 
     boolean orderedinserts;
 
     int recordcount;
-
-    private Measurements _measurements = Measurements.getMeasurements();
+    int opcount;
+    AtomicInteger actualopcount = new AtomicInteger(0);
+    private int totalcash;
+    private int currenttotal;
+    private int currentcount;
+    private int initialvalue;
 
     protected static IntegerGenerator getFieldLengthGenerator(Properties p) throws WorkloadException
     {
+        int num_records = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
+        int total_cash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));
+
         IntegerGenerator fieldlengthgenerator;
         String fieldlengthdistribution = p.getProperty(FIELD_LENGTH_DISTRIBUTION_PROPERTY, FIELD_LENGTH_DISTRIBUTION_PROPERTY_DEFAULT);
         int fieldlength = Integer.parseInt(p.getProperty(FIELD_LENGTH_PROPERTY, FIELD_LENGTH_PROPERTY_DEFAULT));
         String fieldlengthhistogram = p.getProperty(FIELD_LENGTH_HISTOGRAM_FILE_PROPERTY, FIELD_LENGTH_HISTOGRAM_FILE_PROPERTY_DEFAULT);
         if (fieldlengthdistribution.compareTo("constant") == 0) {
-            fieldlengthgenerator = new ConstantIntegerGenerator(fieldlength);
+            fieldlengthgenerator = new ConstantIntegerGenerator(total_cash / num_records);
         } else if (fieldlengthdistribution.compareTo("uniform") == 0) {
-            fieldlengthgenerator = new UniformIntegerGenerator(1, fieldlength);
+            fieldlengthgenerator = new UniformIntegerGenerator(1, total_cash / num_records);
         } else if (fieldlengthdistribution.compareTo("zipfian") == 0) {
             fieldlengthgenerator = new ZipfianGenerator(1, fieldlength);
         } else if (fieldlengthdistribution.compareTo("histogram") == 0) {
@@ -357,13 +372,8 @@ public class CoreWorkload extends Workload
     public void init(Properties p) throws WorkloadException
     {
         table = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
-        fieldlengthgenerator = CoreWorkload.getFieldLengthGenerator(p);
+        fieldlengthgenerator = ClosedEconomyWorkload.getFieldLengthGenerator(p);
         fieldcount = Integer.parseInt(p.getProperty(FIELD_COUNT_PROPERTY, FIELD_COUNT_PROPERTY_DEFAULT));
-
-        fieldnames = new ArrayList<String>();
-        for (int i = 0; i < fieldcount; i++) {
-            fieldnames.add("field" + i);
-        }
 
         double readproportion = Double.parseDouble(p.getProperty(READ_PROPORTION_PROPERTY, READ_PROPORTION_PROPERTY_DEFAULT));
         double updateproportion = Double.parseDouble(p.getProperty(UPDATE_PROPORTION_PROPERTY, UPDATE_PROPORTION_PROPERTY_DEFAULT));
@@ -371,10 +381,12 @@ public class CoreWorkload extends Workload
         double scanproportion = Double.parseDouble(p.getProperty(SCAN_PROPORTION_PROPERTY, SCAN_PROPORTION_PROPERTY_DEFAULT));
         double readmodifywriteproportion = Double.parseDouble(p.getProperty(READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT));
 
-        recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY, Client.DEFAULT_RECORD_COUNT));
-        if (recordcount == 0) {
-            recordcount = Integer.MAX_VALUE;
-        }
+        opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
+        recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
+        totalcash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));
+        currenttotal = totalcash;
+        currentcount = recordcount;
+        initialvalue = totalcash / recordcount;
 
         String requestdistrib = p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
         int maxscanlength = Integer.parseInt(p.getProperty(MAX_SCAN_LENGTH_PROPERTY, MAX_SCAN_LENGTH_PROPERTY_DEFAULT));
@@ -384,14 +396,6 @@ public class CoreWorkload extends Workload
 
         readallfields = Boolean.parseBoolean(p.getProperty(READ_ALL_FIELDS_PROPERTY, READ_ALL_FIELDS_PROPERTY_DEFAULT));
         writeallfields = Boolean.parseBoolean(p.getProperty(WRITE_ALL_FIELDS_PROPERTY, WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
-
-        dataintegrity = Boolean.parseBoolean(p.getProperty(DATA_INTEGRITY_PROPERTY, DATA_INTEGRITY_PROPERTY_DEFAULT));
-        //Confirm that fieldlengthgenerator returns a constant if data
-        //integrity check requested.
-        if (dataintegrity && !(p.getProperty(FIELD_LENGTH_DISTRIBUTION_PROPERTY, FIELD_LENGTH_DISTRIBUTION_PROPERTY_DEFAULT)).equals("constant")) {
-            System.err.println("Must have constant field size to check data integrity.");
-            System.exit(-1);
-        }
 
         if (p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") == 0) {
             orderedinserts = false;
@@ -404,6 +408,7 @@ public class CoreWorkload extends Workload
         }
 
         keysequence = new CounterGenerator(insertstart);
+        validation_keysequence = new CounterGenerator(insertstart);
         operationchooser = new DiscreteGenerator();
         if (readproportion > 0) {
             operationchooser.addValue(readproportion, "READ");
@@ -417,28 +422,23 @@ public class CoreWorkload extends Workload
             operationchooser.addValue(insertproportion, "INSERT");
         }
 
-        if (scanproportion > 0) {
-            operationchooser.addValue(scanproportion, "SCAN");
-        }
-
         if (readmodifywriteproportion > 0) {
             operationchooser.addValue(readmodifywriteproportion, "READMODIFYWRITE");
         }
 
-        transactioninsertkeysequence = new AcknowledgedCounterGenerator(recordcount);
+        transactioninsertkeysequence = new CounterGenerator(recordcount);
         if (requestdistrib.compareTo("uniform") == 0) {
             keychooser = new UniformIntegerGenerator(0, recordcount - 1);
         } else if (requestdistrib.compareTo("zipfian") == 0) {
-            //it does this by generating a random "next key" in part by taking the modulus over the number of keys
-            //if the number of keys changes, this would shift the modulus, and we don't want that to change which keys are popular
-            //so we'll actually construct the scrambled zipfian generator with a keyspace that is larger than exists at the beginning
-            //of the test. that is, we'll predict the number of inserts, and tell the scrambled zipfian generator the number of existing keys
-            //plus the number of predicted keys as the total keyspace. then, if the generator picks a key that hasn't been inserted yet, will
-            //just ignore it and pick another key. this way, the size of the keyspace doesn't change from the perspective of the scrambled zipfian generator
-
+            // it does this by generating a random "next key" in part by taking the modulus over the number of keys
+            // if the number of keys changes, this would shift the modulus, and we don't want that to change which keys are popular
+            // so we'll actually construct the scrambled zipfian generator with a keyspace that is larger than exists at the beginning
+            // of the test. that is, we'll predict the number of inserts, and tell the scrambled zipfian generator the number of existing keys
+            // plus the number of predicted keys as the total keyspace. then, if the generator picks a key that hasn't been inserted yet, will
+            // just ignore it and pick another key. this way, the size of the keyspace doesn't change from the perspective of the scrambled
+            // zipfian generator
             int opcount = Integer.parseInt(p.getProperty(Client.OPERATION_COUNT_PROPERTY));
-            int expectednewkeys = (int) (((double) opcount) * insertproportion * 2.0); //2 is fudge factor
-
+            int expectednewkeys = (int) (((double) opcount) * insertproportion * 2.0); // 2 is fudge factor
             keychooser = new ScrambledZipfianGenerator(recordcount + expectednewkeys);
         } else if (requestdistrib.compareTo("latest") == 0) {
             keychooser = new SkewedLatestGenerator(transactioninsertkeysequence);
@@ -459,73 +459,38 @@ public class CoreWorkload extends Workload
         } else {
             throw new WorkloadException("Distribution \"" + scanlengthdistrib + "\" not allowed for scan length");
         }
+
+        _measurements = Measurements.getMeasurements();
     }
 
     public String buildKeyName(long keynum)
     {
-        if (!orderedinserts) {
-            keynum = Utils.hash(keynum);
-        }
+//      if (!orderedinserts) {
+//          keynum = Utils.hash(keynum);
+//      }
+        // System.err.println("key: " + keynum);
         return "user" + keynum;
     }
 
-    /**
-     * Builds a value for a randomly chosen field.
-     */
-    private HashMap<String, ByteIterator> buildSingleValue(String key)
-    {
-        HashMap<String, ByteIterator> value = new HashMap<String, ByteIterator>();
-
-        String fieldkey = fieldnames.get(Integer.parseInt(fieldchooser.nextString()));
-        ByteIterator data;
-        if (dataintegrity) {
-            data = new StringByteIterator(buildDeterministicValue(key, fieldkey));
-        } else {
-            //fill with random data
-            data = new RandomByteIterator(fieldlengthgenerator.nextInt());
-        }
-        value.put(fieldkey, data);
-
-        return value;
-    }
-
-    /**
-     * Builds values for all fields.
-     */
-    private HashMap<String, ByteIterator> buildValues(String key)
+    HashMap<String, ByteIterator> buildValues()
     {
         HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
 
-        for (String fieldkey : fieldnames) {
-            ByteIterator data;
-            if (dataintegrity) {
-                data = new StringByteIterator(buildDeterministicValue(key, fieldkey));
-            } else {
-                //fill with random data
-                data = new RandomByteIterator(fieldlengthgenerator.nextInt());
-            }
-            values.put(fieldkey, data);
-        }
+        String fieldkey = "field0";
+        ByteIterator data = new StringByteIterator("" + initialvalue);
+        values.put(fieldkey, data);
         return values;
     }
 
-    /**
-     * Build a deterministic value given the key information.
-     */
-    private String buildDeterministicValue(String key, String fieldkey)
+    HashMap<String, ByteIterator> buildUpdate()
     {
-        int size = fieldlengthgenerator.nextInt();
-        StringBuilder sb = new StringBuilder(size);
-        sb.append(key);
-        sb.append(':');
-        sb.append(fieldkey);
-        while (sb.length() < size) {
-            sb.append(':');
-            sb.append(sb.toString().hashCode());
-        }
-        sb.setLength(size);
-
-        return sb.toString();
+        // update a random field
+        HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
+        String fieldname = "field" + fieldchooser.nextString();
+        ByteIterator data = new RandomByteIterator(
+                fieldlengthgenerator.nextInt());
+        values.put(fieldname, data);
+        return values;
     }
 
     /**
@@ -534,13 +499,16 @@ public class CoreWorkload extends Workload
      * avoid synchronized, or the threads will block waiting for each other, and
      * it will be difficult to reach the target throughput. Ideally, this
      * function would have no side effects other than DB operations.
+     *
+     * @throws WorkloadException
      */
-    public boolean doInsert(DB db, Object threadstate)
+    public boolean doInsert(DB db, Object threadstate) throws WorkloadException
     {
         int keynum = keysequence.nextInt();
         String dbkey = buildKeyName(keynum);
-        HashMap<String, ByteIterator> values = buildValues(dbkey);
+        HashMap<String, ByteIterator> values = buildValues();
         if (db.insert(table, dbkey, values).equals(Status.OK)) {
+            actualopcount.addAndGet(1);
             return true;
         } else {
             return false;
@@ -553,51 +521,60 @@ public class CoreWorkload extends Workload
      * avoid synchronized, or the threads will block waiting for each other, and
      * it will be difficult to reach the target throughput. Ideally, this
      * function would have no side effects other than DB operations.
+     *
+     * @throws WorkloadException
      */
     public boolean doTransaction(DB db, Object threadstate)
+            throws WorkloadException
     {
+        boolean ret = true;
+        long st = System.nanoTime();
+
         String op = operationchooser.nextString();
 
         if (op.compareTo("READ") == 0) {
-            doTransactionRead(db);
+            ret = doTransactionRead(db);
         } else if (op.compareTo("UPDATE") == 0) {
-            doTransactionUpdate(db);
+            ret = doTransactionUpdate(db);
         } else if (op.compareTo("INSERT") == 0) {
-            doTransactionInsert(db);
+            ret = doTransactionInsert(db);
         } else if (op.compareTo("SCAN") == 0) {
-            doTransactionScan(db);
+            ret = doTransactionScan(db);
         } else {
-            doTransactionReadModifyWrite(db);
+            ret = doTransactionReadModifyWrite(db);
         }
 
-        return true;
-    }
-
-    /**
-     * Results are reported in the first three buckets of the histogram under
-     * the label "VERIFY". Bucket 0 means the expected data was returned. Bucket
-     * 1 means incorrect data was returned. Bucket 2 means null data was
-     * returned when some data was expected.
-     */
-    protected void verifyRow(String key, HashMap<String, ByteIterator> cells)
-    {
-        Status verifyStatus = Status.OK;
-        long startTime = System.nanoTime();
-        if (!cells.isEmpty()) {
-            for (Map.Entry<String, ByteIterator> entry : cells.entrySet()) {
-                if (!entry.getValue().toString().equals(
-                        buildDeterministicValue(key, entry.getKey()))) {
-                    verifyStatus = Status.UNEXPECTED_STATE;
-                    break;
-                }
-            }
+        long en = System.nanoTime();
+        _measurements.measure(_operations.get(op), (int) ((en - st) / 1000));
+        
+        /*
+        // original code from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyWorkload.java
+        if (ret) {
+            _measurements.reportReturnCode(_operations.get(op), -1);
         } else {
-            //This assumes that null data is never valid
-            verifyStatus = Status.ERROR;
+            _measurements.reportReturnCode(_operations.get(op), 0);
         }
-        long endTime = System.nanoTime();
-        _measurements.measure("VERIFY", (int) (endTime - startTime) / 1000);
-        _measurements.reportStatus("VERIFY", verifyStatus);
+        */
+        /*
+        * @NOTE :: Shegufta Bakht Ahsan
+        * @NOTE :: above commented portion is the original code written by AKON.. It was written in 2014
+        * @NOTE :: in 2015 YCSB, reportReturnCode has been replaced by reportStatus
+        * @NOTE :: also, the new function takes a STATUS value
+        * @NOTE :: I have replaced -1 with Status.OK, and 0 with Status.ERROR
+        * @NOTE :: I am not sure whether it will work fine or not...
+        * @NOTE :: I have to double check it !
+        */
+        if (ret) {
+            _measurements.reportStatus(_operations.get(op), Status.OK);
+        } else {
+            _measurements.reportStatus(_operations.get(op), Status.ERROR);
+        }
+        
+        
+        
+        actualopcount.addAndGet(1);
+
+        return ret;
     }
 
     int nextKeynum()
@@ -605,7 +582,8 @@ public class CoreWorkload extends Workload
         int keynum;
         if (keychooser instanceof ExponentialGenerator) {
             do {
-                keynum = transactioninsertkeysequence.lastInt() - keychooser.nextInt();
+                keynum = transactioninsertkeysequence.lastInt()
+                        - keychooser.nextInt();
             } while (keynum < 0);
         } else {
             do {
@@ -615,9 +593,9 @@ public class CoreWorkload extends Workload
         return keynum;
     }
 
-    public void doTransactionRead(DB db)
+    public boolean doTransactionRead(DB db)
     {
-        //choose a random key
+        // choose a random key
         int keynum = nextKeynum();
 
         String keyname = buildKeyName(keynum);
@@ -625,98 +603,115 @@ public class CoreWorkload extends Workload
         HashSet<String> fields = null;
 
         if (!readallfields) {
-            //read a random field  
-            String fieldname = fieldnames.get(Integer.parseInt(fieldchooser.nextString()));
+            // read a random field
+            String fieldname = "field" + fieldchooser.nextString();
 
             fields = new HashSet<String>();
             fields.add(fieldname);
-        } else if (dataintegrity) {
-            // pass the full field list if dataintegrity is on for verification
-            fields = new HashSet<String>(fieldnames);
         }
 
-        HashMap<String, ByteIterator> cells
-                = new HashMap<String, ByteIterator>();
-        db.read(table, keyname, fields, cells);
+        HashMap<String, ByteIterator> firstvalues = new HashMap<String, ByteIterator>();
 
-        if (dataintegrity) {
-            verifyRow(keyname, cells);
-        }
+        return (db.read(table, keyname, fields, firstvalues).equals(Status.OK));
     }
 
-    public void doTransactionReadModifyWrite(DB db)
+    public boolean doTransactionReadModifyWrite(DB db)
     {
-        //choose a random key
-        int keynum = nextKeynum();
+        // choose a random key
+        int first = nextKeynum();
+        int second = first;
+        while (second == first) {
+            second = nextKeynum();
+        }
+        // We want to move money in one direction only, to ensure transactions
+        // don't 'cancel' one-another out, i.e. T1: A -> B, and concurrently
+        // T2: B -> A. Hence, we only transfer from higher accounts to lower
+        // accounts.
+        if (first < second) {
+            int temp = first;
+            first = second;
+            second = temp;
+        }
 
-        String keyname = buildKeyName(keynum);
+        String firstkey = buildKeyName(first);
+        String secondkey = buildKeyName(second);
 
         HashSet<String> fields = null;
 
         if (!readallfields) {
-            //read a random field  
-            String fieldname = fieldnames.get(Integer.parseInt(fieldchooser.nextString()));
+            // read a random field
+            String fieldname = "field" + fieldchooser.nextString();
 
             fields = new HashSet<String>();
             fields.add(fieldname);
         }
 
-        HashMap<String, ByteIterator> values;
+        HashMap<String, ByteIterator> firstvalues = new HashMap<String, ByteIterator>();
+        HashMap<String, ByteIterator> secondvalues = new HashMap<String, ByteIterator>();
 
-        if (writeallfields) {
-            //new data for all the fields
-            values = buildValues(keyname);
-        } else {
-            //update a random field
-            values = buildSingleValue(keyname);
+        // do the transaction
+        long st = System.currentTimeMillis();
+
+        if (db.read(table, firstkey, fields, firstvalues).equals(Status.OK) && db.read(table, secondkey, fields, secondvalues).equals(Status.OK)) {
+            try {
+                int firstamount = Integer.parseInt(firstvalues.get("field0")
+                        .toString());
+                int secondamount = Integer.parseInt(secondvalues.get("field0")
+                        .toString());
+
+                if (firstamount > 0) {
+                    firstamount--;
+                    secondamount++;
+                }
+
+                firstvalues.put("field0",
+                        new StringByteIterator(Integer.toString(firstamount)));
+                secondvalues.put("field0",
+                        new StringByteIterator(Integer.toString(secondamount)));
+
+                boolean isUpdateFirst = db.update(table, firstkey, firstvalues).equals(Status.OK);
+                boolean isUpdateSecond = db.update(table, secondkey, secondvalues).equals(Status.OK);
+                if ( (!isUpdateFirst) || (!isUpdateSecond) ) {
+                    return false;
+                }
+
+                long en = System.currentTimeMillis();
+
+                Measurements.getMeasurements().measure("READ-MODIFY-WRITE", (int) (en - st));
+            } catch (NumberFormatException e) {
+                return false;
+            }
+            return true;
         }
-
-        //do the transaction
-        HashMap<String, ByteIterator> cells
-                = new HashMap<String, ByteIterator>();
-
-        long ist = _measurements.getIntendedtartTimeNs();
-        long st = System.nanoTime();
-        db.read(table, keyname, fields, cells);
-
-        db.update(table, keyname, values);
-
-        long en = System.nanoTime();
-
-        if (dataintegrity) {
-            verifyRow(keyname, cells);
-        }
-
-        _measurements.measure("READ-MODIFY-WRITE", (int) ((en - st) / 1000));
-        _measurements.measureIntended("READ-MODIFY-WRITE", (int) ((en - ist) / 1000));
+        return false;
     }
 
-    public void doTransactionScan(DB db)
+    public boolean doTransactionScan(DB db)
     {
-        //choose a random key
+        // choose a random key
         int keynum = nextKeynum();
 
         String startkeyname = buildKeyName(keynum);
 
-        //choose a random scan length
+        // choose a random scan length
         int len = scanlength.nextInt();
 
         HashSet<String> fields = null;
 
         if (!readallfields) {
-            //read a random field  
-            String fieldname = fieldnames.get(Integer.parseInt(fieldchooser.nextString()));
+            // read a random field
+            String fieldname = "field" + fieldchooser.nextString();
 
             fields = new HashSet<String>();
             fields.add(fieldname);
         }
 
-        db.scan(table, startkeyname, len, fields, new Vector<HashMap<String, ByteIterator>>());
+        return (db.scan(table, startkeyname, len, fields, new Vector<HashMap<String, ByteIterator>>()).equals(Status.OK));
     }
 
-    public void doTransactionUpdate(DB db)
+    public boolean doTransactionUpdate(DB db)
     {
-        //choose a random key
+        // choose a random key
         int keynum = nextKeynum();
 
         String keyname = buildKeyName(keynum);
@@ -724,28 +719,63 @@ public class CoreWorkload extends Workload
         HashMap<String, ByteIterator> values;
 
         if (writeallfields) {
-            //new data for all the fields
-            values = buildValues(keyname);
+            // new data for all the fields
+            values = buildValues();
         } else {
-            //update a random field
-            values = buildSingleValue(keyname);
+            // update a random field
+            values = buildUpdate();
         }
 
-        db.update(table, keyname, values);
+        return (db.update(table, keyname, values).equals(Status.OK));
     }
 
-    public void doTransactionInsert(DB db)
+    public boolean doTransactionInsert(DB db)
     {
-        //choose the next key
+        // choose the next key
         int keynum = transactioninsertkeysequence.nextInt();
 
-        try {
-            String dbkey = buildKeyName(keynum);
+        String dbkey = buildKeyName(keynum);
 
-            HashMap<String, ByteIterator> values = buildValues(dbkey);
-            db.insert(table, dbkey, values);
-        } finally {
-            transactioninsertkeysequence.acknowledge(keynum);
+        HashMap<String, ByteIterator> values = buildValues();
+        return (db.insert(table, dbkey, values).equals(Status.OK));
+    }
+
+    /**
+     * Perform validation of the database db after the workload has executed.
+     *
+     * @return false if the workload left the database in an inconsistent state,
+     * true if it is consistent.
+     * @throws WorkloadException
+     */
+    public boolean validate(DB db) throws WorkloadException
+    {
+        HashSet<String> fields = new HashSet<String>();
+        fields.add("field0");
+        System.out.println("Validating data");
+        HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
+        int counted_sum = 0;
+        for (int i = 0; i < recordcount; i++) {
+            String keyname = buildKeyName(validation_keysequence.nextInt());
+            try {
+                db.start();
+                db.read(table, keyname, fields, values);
+                db.commit();
+            } catch (DBException e) {
+                throw new WorkloadException(e);
+            }
+            counted_sum += Integer.parseInt(values.get("field0").toString());
+        }
+
+        if (counted_sum != totalcash) {
+            System.out.println("Validation failed");
+            System.out.println("[TOTAL CASH], " + totalcash);
+            System.out.println("[COUNTED CASH], " + counted_sum);
+            int count = actualopcount.intValue();
+            System.out.println("[ACTUAL OPERATIONS], " + count);
+            System.out.println("[ANOMALY SCORE], " + Math.abs((totalcash - counted_sum) / (1.0 * count)));
+            return false;
+        } else {
+            return true;
         }
     }
 }

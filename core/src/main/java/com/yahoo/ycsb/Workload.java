@@ -90,8 +90,11 @@ public abstract class Workload
      * function would have no side effects other than DB operations and
      * mutations on threadstate. Mutations to threadstate do not need to be
      * synchronized, since each thread has its own threadstate instance.
+     *
+     * @throws WorkloadException //
+     * https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/Workload.java
      */
-    public abstract boolean doInsert(DB db, Object threadstate);
+    public abstract boolean doInsert(DB db, Object threadstate) throws WorkloadException;
 
     /**
      * Do one transaction operation. Because it will be called concurrently from
@@ -107,8 +110,11 @@ public abstract class Workload
      * workloads that rely on operationcount. For workloads that read traces
      * from a file, return true when there are more to do, false when you are
      * done.
+     *
+     * @throws WorkloadException //
+     * https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/Workload.java
      */
-    public abstract boolean doTransaction(DB db, Object threadstate);
+    public abstract boolean doTransaction(DB db, Object threadstate) throws WorkloadException;
 
     /**
      * Allows scheduling a request to stop the workload.
@@ -130,5 +136,18 @@ public abstract class Workload
         } else {
             return false;
         }
+    }
+
+    /**
+     * Perform validation of the database db after the workload has executed.
+     *
+     * @return false if the workload left the database in an inconsistent state,
+     * true if it is consistent.
+     * @throws WorkloadException
+     * https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/Workload.java
+     */
+    public boolean validate(DB db) throws WorkloadException
+    {
+        return true;
     }
 }

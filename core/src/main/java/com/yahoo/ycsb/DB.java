@@ -140,4 +140,25 @@ public abstract class DB
      * @return The result of the operation.
      */
     public abstract Status delete(String table, String key);
+    
+    /**
+     * https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/DB.java
+     * Start a database transaction.
+     */
+    public void start() throws DBException {
+    }
+
+    /**
+     * https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/DB.java
+     * Commit the current database transaction.
+     */
+    public void commit() throws DBException {
+    }
+
+    /**
+     * https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/DB.java
+     * Abort the current database transaction.
+     */
+    public void abort() throws DBException {
+    }
 }
