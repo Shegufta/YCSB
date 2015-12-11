@@ -565,11 +565,16 @@ public class ClosedEconomyWorkload extends Workload
         * @NOTE :: I am not sure whether it will work fine or not...
         * @NOTE :: I have to double check it !
         */
+        /*
+        //Shegufta B Ahsan :: I have commented out this part of Akon's code. This things are called
+        //from the corresponding functions of DBWrapper.java... e.g. _measurements.reportStatus("INSERT", res);
+        //hence, most probably it is redundent..... BUT im not 100% sure right now.... Needs more thorough checking and understanding of whats going on !
         if (ret) {
             _measurements.reportStatus(_operations.get(op), Status.OK);
         } else {
             _measurements.reportStatus(_operations.get(op), Status.ERROR);
         }
+        */
         
         
         
