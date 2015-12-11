@@ -368,7 +368,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         int initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
 
         if (!p.contains(INITIAL_CASH_PROPERTY)) {
-            System.out.println("\n\tWARNING:: INIDIAL_CASH_PROPERTY not found... useing the default value.... initialCash = " + initialCash);
+            System.out.println("\n\tWARNING:: INITIAL_CASH_PROPERTY not found... useing the default value.... initialCash = " + initialCash+"\n");
         }
 
         IntegerGenerator fieldlengthgenerator;
