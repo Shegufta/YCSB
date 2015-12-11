@@ -368,7 +368,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         int initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
 
         if (!p.contains(INITIAL_CASH_PROPERTY)) {
-            System.out.println("\n\tWARNING:: INITIAL_CASH_PROPERTY not found... useing the default value.... initialCash = " + initialCash+"\n");
+            System.out.println("\n\tWARNING:: INITIAL_CASH_PROPERTY not found... useing the default value.... initial_cash = " + initialCash + "\n");
         }
 
         IntegerGenerator fieldlengthgenerator;
@@ -417,7 +417,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         {
             recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
         } else {
-            System.out.println("the property file does not contain " + Client.RECORD_COUNT_PROPERTY);
+            System.out.println("\n\nthe property file does not contain " + Client.RECORD_COUNT_PROPERTY);
             System.out.println("inside ClosedEconomyConstantAccountWorkload.java:: public void init(Properties p)");
             System.exit(1);
         }
@@ -425,6 +425,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         //currenttotal = totalcash;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
         //currentcount = recordcount;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
         this.initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
+        this.totalcash = initialCash * (1 + recordcount);
 
         this.bankACCOUNT = new AtomicInteger(this.initialCash);//Shegufta
 
@@ -1026,9 +1027,11 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     {
         HashSet<String> fields = new HashSet<String>();
         fields.add("field0");
-        System.out.println("Validating data");
+        
+        System.out.println("\nValidating data");
         HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
-        int counted_sum = 0;
+
+        int counted_sum = this.bankACCOUNT.get();
         for (int i = 0; i < recordcount; i++) {
             String keyname = buildKeyName(validation_keysequence.nextInt());
             try {
@@ -1041,15 +1044,21 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             counted_sum += Integer.parseInt(values.get("field0").toString());
         }
 
+        System.out.println("-------------------------");
+        System.out.println("[TOTAL CASH], " + totalcash);
+        System.out.println("[COUNTED CASH], " + counted_sum);
+        int count = actualopcount.intValue();
+        System.out.println("[ACTUAL OPERATIONS], " + count);
+        System.out.println("[ANOMALY SCORE], " + Math.abs((totalcash - counted_sum) / (1.0 * count)));
+        System.out.println("-------------------------");
+
         if (counted_sum != totalcash) {
             System.out.println("Validation failed");
-            System.out.println("[TOTAL CASH], " + totalcash);
-            System.out.println("[COUNTED CASH], " + counted_sum);
-            int count = actualopcount.intValue();
-            System.out.println("[ACTUAL OPERATIONS], " + count);
-            System.out.println("[ANOMALY SCORE], " + Math.abs((totalcash - counted_sum) / (1.0 * count)));
+            System.out.println("-------------------------\n");
             return false;
         } else {
+            System.out.println("Validation successful");
+            System.out.println("-------------------------\n");
             return true;
         }
     }
