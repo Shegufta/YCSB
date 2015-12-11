@@ -487,8 +487,9 @@ public class ClosedEconomyWorkload extends Workload
         // update a random field
         HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
         String fieldname = "field" + fieldchooser.nextString();
-        ByteIterator data = new RandomByteIterator(
-                fieldlengthgenerator.nextInt());
+        
+        //ByteIterator data = new RandomByteIterator(fieldlengthgenerator.nextInt());// AKON's line
+        ByteIterator data = new StringByteIterator("" + fieldlengthgenerator.nextInt());// Shegufta B Ahsan :: I have replaced RandomByteIterator with StringByteIterator which is more appropriate for this situation. RandomByteIterator generates a random sequence which eventually results crash in closedEconomyWorkload scenario
         values.put(fieldname, data);
         return values;
     }

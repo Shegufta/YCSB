@@ -893,7 +893,7 @@ public class Client
             e.printStackTrace(System.out);
             System.exit(0);
         }
-
+  
         try {
             exportMeasurements(props, opsDone, en - st);
         } catch (IOException e) {
@@ -901,7 +901,7 @@ public class Client
             e.printStackTrace();
             System.exit(-1);
         }
-
+                
         System.exit(0);
     }
 }
