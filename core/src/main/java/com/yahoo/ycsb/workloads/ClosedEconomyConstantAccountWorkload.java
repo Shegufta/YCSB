@@ -15,13 +15,15 @@
  */
 
 /*
- *@author: https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyWorkload.java
+ *@author: https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyConstantAccountWorkload.java
  */
 package com.yahoo.ycsb.workloads;
 
 import java.util.Properties;
 
 import com.yahoo.ycsb.*;
+import static com.yahoo.ycsb.Workload.INSERT_START_PROPERTY;
+import static com.yahoo.ycsb.Workload.INSERT_START_PROPERTY_DEFAULT;
 import com.yahoo.ycsb.generator.CounterGenerator;
 import com.yahoo.ycsb.generator.DiscreteGenerator;
 import com.yahoo.ycsb.generator.ExponentialGenerator;
@@ -79,7 +81,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * ("ordered"), or in hashed order ("hashed") (default: hashed)
  * </ul>
  */
-public class ClosedEconomyWorkload extends Workload
+public class ClosedEconomyConstantAccountWorkload extends Workload
 {
 
     /**
@@ -130,15 +132,32 @@ public class ClosedEconomyWorkload extends Workload
      * The default maximum length of a field in bytes.
      */
     public static final String FIELD_LENGTH_PROPERTY_DEFAULT = "100";
+
     /**
      * The name of the property for the total amount of money in the economy at
      * the start.
      */
-    public static final String TOTAL_CASH_PROPERTY = "total_cash";
+    //public static final String TOTAL_CASH_PROPERTY = "total_cash"; //Shegufta:: I have disabled it
     /**
      * The default total amount of money in the economy at the start.
      */
-    public static final String TOTAL_CASH_PROPERTY_DEFAULT = "1000000";
+    //public static final String TOTAL_CASH_PROPERTY_DEFAULT = "1000000"; // Shegufta:: I have commented it out
+    /**
+     * The name of the property for the initial amount of money in each account
+     * (#of account is defined by RECORD_COUNT_PROPERTY) plus in the
+     * bankACCOUNT; Hence the total cash will be "InitialAmount*(1+RecordCount)"
+     */
+    public static final String INITIAL_CASH_PROPERTY = "initial_cash";//Shegufta:: I have added it... read the comment above
+    /**
+     * The default total amount of money in the economy at the start.
+     */
+    public static final String INITIAL_CASH_PROPERTY_DEFAULT = "1000";//shegufta
+
+    public static final String STATUS_NAME_REWARD_CUSTOMER = "RewardCustomer"; //shegufta
+
+    public static final String STATUS_NAME_PAY_TO_BANK = "PayToBank"; //shegufta
+
+    public static final String STATUS_NAME_TRANSFER_BETWEEN_ACC = "TransferBetweenAcc"; //shegufta
 
     public static final String OPERATION_COUNT_PROPERTY = "operationcount";
 
@@ -333,24 +352,35 @@ public class ClosedEconomyWorkload extends Workload
     int recordcount;
     int opcount;
     AtomicInteger actualopcount = new AtomicInteger(0);
-    private int totalcash;
-    private int currenttotal;
-    private int currentcount;
-    private int initialvalue;
+    AtomicInteger bankACCOUNT = null;//Shegufta
+    private int totalcash;  // shegufta: I am using this variable in a different way.
+    //From now on, total cash will be initialCash*(totalRecordCount+1)....
+    //the 1 is added for the bankACCOUNT
+    private int initialCash; // shegufta: initial cash amount for each record and also for the bankACCOUNT;
+    //private int currenttotal;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
+    //private int currentcount; // shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
+    //private int initialvalue;// shegufta:: I have replaced it by initialCash
 
     protected static IntegerGenerator getFieldLengthGenerator(Properties p) throws WorkloadException
     {
-        int num_records = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
-        int total_cash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));
+        //int num_records = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY)); // shegufta:: I have commented out this line.
+        //int total_cash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));// shegufta:: I have commented out this line.
+        int initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
+
+        if (!p.contains(INITIAL_CASH_PROPERTY)) {
+            System.out.println("\n\tWARNING:: INIDIAL_CASH_PROPERTY not found... useing the default value.... initialCash = " + initialCash);
+        }
 
         IntegerGenerator fieldlengthgenerator;
         String fieldlengthdistribution = p.getProperty(FIELD_LENGTH_DISTRIBUTION_PROPERTY, FIELD_LENGTH_DISTRIBUTION_PROPERTY_DEFAULT);
         int fieldlength = Integer.parseInt(p.getProperty(FIELD_LENGTH_PROPERTY, FIELD_LENGTH_PROPERTY_DEFAULT));
         String fieldlengthhistogram = p.getProperty(FIELD_LENGTH_HISTOGRAM_FILE_PROPERTY, FIELD_LENGTH_HISTOGRAM_FILE_PROPERTY_DEFAULT);
         if (fieldlengthdistribution.compareTo("constant") == 0) {
-            fieldlengthgenerator = new ConstantIntegerGenerator(total_cash / num_records);
+            fieldlengthgenerator = new ConstantIntegerGenerator(initialCash);
+            //fieldlengthgenerator = new ConstantIntegerGenerator(total_cash / num_records);// shegufta:: I have commented out this line.
         } else if (fieldlengthdistribution.compareTo("uniform") == 0) {
-            fieldlengthgenerator = new UniformIntegerGenerator(1, total_cash / num_records);
+            fieldlengthgenerator = new UniformIntegerGenerator(1, initialCash);
+            //fieldlengthgenerator = new UniformIntegerGenerator(1, total_cash / num_records);// shegufta:: I have commented out this line.
         } else if (fieldlengthdistribution.compareTo("zipfian") == 0) {
             fieldlengthgenerator = new ZipfianGenerator(1, fieldlength);
         } else if (fieldlengthdistribution.compareTo("histogram") == 0) {
@@ -372,7 +402,7 @@ public class ClosedEconomyWorkload extends Workload
     public void init(Properties p) throws WorkloadException
     {
         table = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
-        fieldlengthgenerator = ClosedEconomyWorkload.getFieldLengthGenerator(p);
+        fieldlengthgenerator = ClosedEconomyConstantAccountWorkload.getFieldLengthGenerator(p);
         fieldcount = Integer.parseInt(p.getProperty(FIELD_COUNT_PROPERTY, FIELD_COUNT_PROPERTY_DEFAULT));
 
         double readproportion = Double.parseDouble(p.getProperty(READ_PROPORTION_PROPERTY, READ_PROPORTION_PROPERTY_DEFAULT));
@@ -382,11 +412,21 @@ public class ClosedEconomyWorkload extends Workload
         double readmodifywriteproportion = Double.parseDouble(p.getProperty(READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT));
 
         opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
+
+        if (p.containsKey(Client.RECORD_COUNT_PROPERTY))// added by shegufta
+        {
             recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
-        totalcash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));
-        currenttotal = totalcash;
-        currentcount = recordcount;
-        initialvalue = totalcash / recordcount;
+        } else {
+            System.out.println("the property file does not contain " + Client.RECORD_COUNT_PROPERTY);
+            System.out.println("inside ClosedEconomyConstantAccountWorkload.java:: public void init(Properties p)");
+            System.exit(1);
+        }
+        //totalcash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));
+        //currenttotal = totalcash;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
+        //currentcount = recordcount;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
+        this.initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
+
+        this.bankACCOUNT = new AtomicInteger(this.initialCash);//Shegufta
 
         String requestdistrib = p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
         int maxscanlength = Integer.parseInt(p.getProperty(MAX_SCAN_LENGTH_PROPERTY, MAX_SCAN_LENGTH_PROPERTY_DEFAULT));
@@ -477,7 +517,7 @@ public class ClosedEconomyWorkload extends Workload
         HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
 
         String fieldkey = "field0";
-        ByteIterator data = new StringByteIterator("" + initialvalue);
+        ByteIterator data = new StringByteIterator("" + this.initialCash);
         values.put(fieldkey, data);
         return values;
     }
@@ -528,6 +568,36 @@ public class ClosedEconomyWorkload extends Workload
     public boolean doTransaction(DB db, Object threadstate)
             throws WorkloadException
     {
+        /*
+         Shegufta B Ahsan::
+         I am planning to change the work flow.
+        
+         1) There wont be any delete account operation ! All operations will be performed on the initially created account
+         2) Definitely there will be INSERT operation to create account.
+         3) The READ operation will be as it is before
+         4) There wont be any DELETE operation
+         5) There wont be any explicit UPDATE operation
+         6) In Acon's code, update is not doing as it is said in his paper. According to the paper,
+         when deleting an account, all of its amount will be added to the Banks account (say at $BANK_ACC). When an UPDATE
+         is performed, it will read an account ($ACC_n) deduct one dollar from $BANK_ACC, and add it with $ACC_n.
+         The whole process was not implemented in the paper. Also I feel that, when we delete an account, its key needs
+         to be deleted from the datastructure so that it wont be called for next operations. I might implement that scheme later,
+         but right now just to keep things simple, I assume that there is no Delete operation!
+         7) If I understand the code correctly, current YCSB+T code does not use doTransactionReadModifyWrite() at all.
+         I am planning to use it in my code for:
+         7a) Transfer between account: the idea is same as the original code
+         7b) Pay bill to bank: $1 will be transferred from an account to bank's account. It will be added to the $BANK_ACC
+         7c) Reward customer: Bank will reward a customer. it will transfer $1 from $BANK_ACC to its customer's account
+         Initially these three operations will be equally probable.
+         8) SCAN: i m not sure if we need it or not !  Lets think about it later :)
+         9) Right now the program takes the amount of TotalCash as an input and equally divide it among all the 'n' records.
+         because of the integer variables, we might loose some numbers while dividing.
+         So why not think it from the opposite way?
+         Now we will rather take InitialCash as an input instead of TotalCash.
+         We know the total number of account. PLUS in our code we will assign some amount to the $BANK_ACC
+         Hence, now the TotalCash will be  {(1+n)*InitialCash}
+         In this process we wont loose any number because of division!
+         */
         boolean ret = true;
         long st = System.nanoTime();
 
@@ -549,7 +619,7 @@ public class ClosedEconomyWorkload extends Workload
         _measurements.measure(_operations.get(op), (int) ((en - st) / 1000));
 
         /*
-         // original code from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyWorkload.java
+         // original code from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyConstantAccountWorkload.java
          if (ret) {
          _measurements.reportReturnCode(_operations.get(op), -1);
          } else {
@@ -575,9 +645,6 @@ public class ClosedEconomyWorkload extends Workload
          _measurements.reportStatus(_operations.get(op), Status.ERROR);
          }
          */
-        
-        
-        
         actualopcount.addAndGet(1);
 
         return ret;
@@ -619,6 +686,207 @@ public class ClosedEconomyWorkload extends Workload
         HashMap<String, ByteIterator> firstvalues = new HashMap<String, ByteIterator>();
 
         return (db.read(table, keyname, fields, firstvalues).equals(Status.OK));
+    }
+
+    /*
+     *@author: shegufta
+     * A customer will be rewarded with money transferred from bank account (provided that there are sufficient money available in the bank account)
+     */
+    public boolean doTransactionRewardCustomer(DB db)
+    {
+        //@TODO:: do we need to disable autocommit and then explicitely call commit?
+
+        if (bankACCOUNT.decrementAndGet() < 0) // decrement Bank account and check if it is greater than zero... if not, increment it
+        {// Bank does not have sufficient money !
+            bankACCOUNT.incrementAndGet();
+            _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
+            return false;
+        }
+
+        int customerAcc = nextKeynum();
+        String customerKey = buildKeyName(customerAcc);
+        HashMap<String, ByteIterator> customerValues = new HashMap<String, ByteIterator>();
+
+        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
+        HashSet<String> fields = new HashSet<String>();
+        fields.add(fieldname);
+
+        try {
+            // do the transaction
+            long st = System.currentTimeMillis();
+            if (db.read(table, customerKey, fields, customerValues).equals(Status.OK)) {
+
+                int increasedAmount = 1 + Integer.parseInt(customerValues.get("field0").toString());
+
+                customerValues.put("field0", new StringByteIterator(Integer.toString(increasedAmount)));
+
+                if (db.update(table, customerKey, customerValues).equals(Status.OK)) {
+                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.OK);
+                    long en = System.currentTimeMillis();
+                    Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, (int) (en - st));
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("\n" + e.toString() + "\n");
+        }
+
+        bankACCOUNT.incrementAndGet();
+        // if the code works perfectly, it should not reach this point...
+        // it will reach this point only if there is something wrong
+        // which means it is not able to perform the update
+        // hence increment the bankACCOUNT to set it as it was before.
+        _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
+        return false;
+    }
+
+    /*
+     *@author: shegufta
+     *Customer will pay an amount to the bank account. Provided that customer has sufficient money in his account
+     */
+    public boolean doTransactionPayToBank(DB db)
+    {
+        //@TODO:: do we need to disable autocommit and then explicitely call commit?
+
+        int customerAcc = nextKeynum();
+        String customerKey = buildKeyName(customerAcc);
+        HashMap<String, ByteIterator> customerValues = new HashMap<String, ByteIterator>();
+
+        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
+        HashSet<String> fields = new HashSet<String>();
+        fields.add(fieldname);
+
+        try {
+            // do the transaction
+            long st = System.currentTimeMillis();
+            if (db.read(table, customerKey, fields, customerValues).equals(Status.OK)) {
+                int decreasedAmount = Integer.parseInt(customerValues.get("field0").toString()) - 1;
+                if (decreasedAmount < 0) {// client does not have enough money !
+                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, Status.UNEXPECTED_STATE);
+                    return false;
+                }
+
+                customerValues.put("field0", new StringByteIterator(Integer.toString(decreasedAmount)));
+
+                if (db.update(table, customerKey, customerValues).equals(Status.OK)) {
+                    bankACCOUNT.incrementAndGet();// add the amount to bankACCOUNT
+                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, Status.OK);
+                    long en = System.currentTimeMillis();
+                    Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, (int) (en - st));
+                    return true;
+                }
+
+            }
+        } catch (Exception e) {
+            System.out.println("\n" + e.toString() + "\n");
+        }
+
+        // if the code works perfectly, it should not reach this point...
+        // it will reach this point only if there is something wrong
+        // which means it is not able to perform the read/update etc.
+        // hence increment the bankACCOUNT to set it as it was before.
+        _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
+        return false;
+    }
+
+    /*
+     *@author: shegufta
+     *transfer money from one customer account to another one.
+     */
+    public boolean doTransactionTransferBetweenCustomer(DB db)
+    {
+        //@TODO:: do we need to disable autocommit and then explicitely call commit?
+
+        // choose a random key
+        int first = nextKeynum();
+        int second = first;
+        while (second == first) {
+            second = nextKeynum();
+        }
+        /* it was done in the main YCSB+T code, but I dont think it is necessary right now.
+         // We want to move money in one direction only, to ensure transactions
+         // don't 'cancel' one-another out, i.e. T1: A -> B, and concurrently
+         // T2: B -> A. Hence, we only transfer from higher accounts to lower
+         // accounts.
+         if (first < second) {
+         int temp = first;
+         first = second;
+         second = temp;
+         }
+         */
+
+        int customerFirstAcc = nextKeynum();
+        int customerSecondAcc = nextKeynum();
+
+        int loopBreaker = Integer.MAX_VALUE;
+        while (customerFirstAcc == customerSecondAcc) {
+            customerSecondAcc = nextKeynum();
+            loopBreaker--;
+
+            if (0 == loopBreaker) {
+                System.out.println("\t Cannot find 2nd unique account after " + Integer.MAX_VALUE + "th attempt... May be there is only one account !");
+                System.exit(1);
+            }
+        }
+
+        String customerFirstKey = buildKeyName(customerFirstAcc);
+        String customerSecondKey = buildKeyName(customerSecondAcc);
+
+        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
+        HashSet<String> fields = new HashSet<String>();
+        fields.add(fieldname);
+
+        HashMap<String, ByteIterator> customerFirstValues = new HashMap<String, ByteIterator>();
+        HashMap<String, ByteIterator> customerSecondValues = new HashMap<String, ByteIterator>();
+
+        try {
+            // do the transaction
+            long st = System.currentTimeMillis();
+
+            if (db.read(table, customerFirstKey, fields, customerFirstValues).equals(Status.OK) && db.read(table, customerSecondKey, fields, customerSecondValues).equals(Status.OK)) {
+                int firstCustomerBalance = Integer.parseInt(customerFirstValues.get("field0").toString());
+                int secondCustomerBalance = Integer.parseInt(customerSecondValues.get("field0").toString());
+
+                if (0 < firstCustomerBalance) {
+                    firstCustomerBalance--;
+                    secondCustomerBalance++;
+                } else if (0 < secondCustomerBalance) {
+                    firstCustomerBalance++;
+                    secondCustomerBalance--;
+                } else {// both of them are bankrupt !
+                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
+                    return false;
+                }
+
+                customerFirstValues.put("field0", new StringByteIterator(Integer.toString(firstCustomerBalance)));
+                customerSecondValues.put("field0", new StringByteIterator(Integer.toString(secondCustomerBalance)));
+
+                if ((db.update(table, customerFirstKey, customerFirstValues).equals(Status.OK)) && (db.update(table, customerSecondKey, customerSecondValues).equals(Status.OK))) {
+                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.OK);
+                    long en = System.currentTimeMillis();
+                    Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, (int) (en - st));
+
+                    return true;
+                }
+
+            }
+
+            // if the code works well, it should not reach this point...
+            // it will reach this point only if there is something wrong
+            // which means it is not able to perform the read/update etc.
+            // hence increment the bankACCOUNT to set it as it was before.
+            _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
+            return false;
+        } catch (Exception e) {
+            System.out.println("\n" + e.toString() + "\n");
+        }
+
+        // if the code works perfectly, it should not reach this point...
+        // it will reach this point only if there is something wrong
+        // which means it is not able to perform the read/update etc.
+        // hence increment the bankACCOUNT to set it as it was before.
+        _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
+        return false;
     }
 
     public boolean doTransactionReadModifyWrite(DB db)
@@ -677,7 +945,7 @@ public class ClosedEconomyWorkload extends Workload
 
                 boolean isUpdateFirst = db.update(table, firstkey, firstvalues).equals(Status.OK);
                 boolean isUpdateSecond = db.update(table, secondkey, secondvalues).equals(Status.OK);
-                if ( (!isUpdateFirst) || (!isUpdateSecond) ) {
+                if ((!isUpdateFirst) || (!isUpdateSecond)) {
                     return false;
                 }
 
@@ -752,6 +1020,7 @@ public class ClosedEconomyWorkload extends Workload
      * @return false if the workload left the database in an inconsistent state,
      * true if it is consistent.
      * @throws WorkloadException
+     * @author Akon Dey
      */
     public boolean validate(DB db) throws WorkloadException
     {
