@@ -378,7 +378,7 @@ class ClientThread extends Thread
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             e.printStackTrace(System.out);
             System.exit(0);
         }
