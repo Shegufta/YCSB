@@ -116,11 +116,11 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
     public static final String TRANSACTION_TRACE_ON = "printTransactionTrace";
     public static final String TRANSACTION_TRACE_ON_DEFAULT = "false";
     boolean printTransactionTrace;
-    
+
     public static final String GENERATED_KEYS_IN_READ_OPERATION = "printKeysInReadOperation";
     public static final String GENERATED_KEYS_IN_READ_OPERATION_DEFAULT = "false";
     boolean printKeysInReadOperation;
-    
+
     public static final String GENERATED_KEYS_IN_TRANSFER_OPERATION = "printKeysInTransferOperation";
     public static final String GENERATED_KEYS_IN_TRANSFER_OPERATION_DEFAULT = "false";
     boolean printKeysInTransferOperation;
@@ -388,19 +388,18 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
             System.out.println(str);
         }
     }
-    
+
     public void printReadKey(int keynum)
     {
         if (this.printKeysInReadOperation) {
-            System.out.println("*** R\t"+keynum);
+            System.out.println("*** R\t" + keynum);
         }
     }
-    
+
     public void printTransactionKey(int customerFirstAcc, int customerSecondAcc)
     {
-        if(this.printKeysInTransferOperation)
-        {
-            System.out.println("*** T\t"+customerFirstAcc+"\t"+customerSecondAcc);
+        if (this.printKeysInTransferOperation) {
+            System.out.println("*** T\t" + customerFirstAcc + "\t" + customerSecondAcc);
         }
     }
 
@@ -427,7 +426,7 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
         this.printTransactionTrace = Boolean.parseBoolean(p.getProperty(TRANSACTION_TRACE_ON, TRANSACTION_TRACE_ON_DEFAULT));
         this.printKeysInReadOperation = Boolean.parseBoolean(p.getProperty(GENERATED_KEYS_IN_READ_OPERATION, GENERATED_KEYS_IN_READ_OPERATION_DEFAULT));
         this.printKeysInTransferOperation = Boolean.parseBoolean(p.getProperty(GENERATED_KEYS_IN_TRANSFER_OPERATION, GENERATED_KEYS_IN_TRANSFER_OPERATION_DEFAULT));
-        
+
         opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
 
         if (p.containsKey(Client.RECORD_COUNT_PROPERTY))// added by shegufta
@@ -684,7 +683,7 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
         // choose a random key
         int keynum = nextKeynum();
         String keyname = buildKeyName(keynum);
-        
+
         this.printReadKey(keynum);
 
         String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
@@ -720,8 +719,8 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
                 System.exit(1);
             }
         }
-        
-        this.printTransactionKey(customerFirstAcc , customerSecondAcc );
+
+        this.printTransactionKey(customerFirstAcc, customerSecondAcc);
 
         String customerFirstKey = buildKeyName(customerFirstAcc);
         String customerSecondKey = buildKeyName(customerSecondAcc);

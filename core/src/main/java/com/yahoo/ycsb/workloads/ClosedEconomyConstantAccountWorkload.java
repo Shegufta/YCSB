@@ -112,9 +112,9 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     public static final String STATUS_NAME_PAY_TO_BANK = "PayToBank"; //shegufta
     public static final String STATUS_NAME_TRANSFER_BETWEEN_ACC = "TransferBetweenAcc"; //shegufta
     public static final String OPERATION_COUNT_PROPERTY = "operationcount";
-    
-    public static final String TRANSACTION_TRACE_ON="printTransactionTrace";
-    public static final String TRANSACTION_TRACE_ON_DEFAULT="false";
+
+    public static final String TRANSACTION_TRACE_ON = "printTransactionTrace";
+    public static final String TRANSACTION_TRACE_ON_DEFAULT = "false";
     boolean printTransactionTrace;
 
     /**
@@ -380,15 +380,15 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     }
 
     /*
-    *@author: shegufta
-    */
+     *@author: shegufta
+     */
     public void printTrace(String str)
     {
-        if(this.printTransactionTrace)
-        {
+        if (this.printTransactionTrace) {
             System.out.println(str);
         }
     }
+
     /**
      * Initialize the scenario. Called once, in the main client thread, before
      * any operations are started.
@@ -410,7 +410,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         double transferbetweencustomerproportion = Double.parseDouble(p.getProperty(TRANS_BETWEEN_CUSTOMER_PROPERTY, TRANS_BETWEEN_CUSTOMER_PROPERTY_DEFAULT));//shegufta
 
         this.printTransactionTrace = Boolean.parseBoolean(p.getProperty(TRANSACTION_TRACE_ON, TRANSACTION_TRACE_ON_DEFAULT));
-        
+
         opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
 
         if (p.containsKey(Client.RECORD_COUNT_PROPERTY))// added by shegufta
@@ -421,7 +421,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             System.out.println("inside ClosedEconomyConstantAccountWorkload.java:: public void init(Properties p)");
             System.exit(1);
         }
-        
+
         this.initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
 
         int maxPossibleInitialCash = Integer.MAX_VALUE / (1 + recordcount);
@@ -433,13 +433,13 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
         this.totalcash = initialCash * (1 + recordcount);
         this.bankACCOUNT = new AtomicInteger(this.initialCash);//Shegufta
-        
+
         System.out.println("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        System.out.println("opcount = "+opcount);
-        System.out.println("recordcount = "+recordcount+"\n");
-        System.out.println("INITIAL CASH: per account = "+initialCash+" (including bankACCOUNT which is not stored in database)");
-        System.out.println("this.totalcash = initialCash * (1 + recordcount) = "+this.totalcash);
-        System.out.println("\nisTransactionTraceOn = "+printTransactionTrace);
+        System.out.println("opcount = " + opcount);
+        System.out.println("recordcount = " + recordcount + "\n");
+        System.out.println("INITIAL CASH: per account = " + initialCash + " (including bankACCOUNT which is not stored in database)");
+        System.out.println("this.totalcash = initialCash * (1 + recordcount) = " + this.totalcash);
+        System.out.println("\nisTransactionTraceOn = " + printTransactionTrace);
         System.out.println("\nOPERATION RATIO:");
         System.out.println("readproportion = " + readproportion);
         //System.out.println("updateproportion = " + updateproportion);
@@ -457,7 +457,6 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             System.out.println("\n\t\tWARNING: total ratio should be equals to 1.0\n");
         }
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
-        
 
         String requestdistrib = p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
         int maxscanlength = Integer.parseInt(p.getProperty(MAX_SCAN_LENGTH_PROPERTY, MAX_SCAN_LENGTH_PROPERTY_DEFAULT));
@@ -755,12 +754,12 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         //@TODO:: do we need to disable autocommit and then explicitely call commit?
 
         String operationName = STATUS_NAME_REWARD_CUSTOMER;
-        printTrace("\n-state START -op "+operationName);
+        printTrace("\n-state START -op " + operationName);
         if (bankACCOUNT.decrementAndGet() < 0) // decrement Bank account and check if it is greater than zero... if not, increment it
         {// Bank does not have sufficient money !
             bankACCOUNT.incrementAndGet();
             _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-            printTrace("-state END -success ERROR -op "+operationName+"\n");
+            printTrace("-state END -success ERROR -op " + operationName + "\n");
             return false;
         }
 
@@ -785,9 +784,9 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
                     _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.OK);
                     long en = System.currentTimeMillis();
                     Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, (int) (en - st));
-                    printTrace("transfer -from bankACCOUNT -to "+customerKey);
-                    printTrace("current money -from $"+bankACCOUNT.get()+" -to $"+increasedAmount);
-                    printTrace("-state END -success OK -op "+operationName+"\n");
+                    printTrace("transfer -from bankACCOUNT -to " + customerKey);
+                    printTrace("current money -from $" + bankACCOUNT.get() + " -to $" + increasedAmount);
+                    printTrace("-state END -success OK -op " + operationName + "\n");
                     return true;
                 }
             }
@@ -801,7 +800,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         // which means it is not able to perform the update
         // hence increment the bankACCOUNT to set it as it was before.
         _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op "+operationName+"\n");
+        printTrace("-state END -success ERROR -op " + operationName + "\n");
         return false;
     }
 
@@ -814,7 +813,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         //@TODO:: do we need to disable autocommit and then explicitely call commit?
 
         String operationName = STATUS_NAME_PAY_TO_BANK;
-        printTrace("\n-state START -op "+operationName);
+        printTrace("\n-state START -op " + operationName);
         int customerAcc = nextKeynum();
         String customerKey = buildKeyName(customerAcc);
         HashMap<String, ByteIterator> customerValues = new HashMap<String, ByteIterator>();
@@ -830,7 +829,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
                 int decreasedAmount = Integer.parseInt(customerValues.get("field0").toString()) - 1;
                 if (decreasedAmount < 0) {// client does not have enough money !
                     _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, Status.UNEXPECTED_STATE);
-                    printTrace("-state END -success ERROR -op "+operationName+"\n");
+                    printTrace("-state END -success ERROR -op " + operationName + "\n");
                     return false;
                 }
 
@@ -841,9 +840,9 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
                     _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, Status.OK);
                     long en = System.currentTimeMillis();
                     Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, (int) (en - st));
-                    printTrace("transfer -from "+customerKey+" -to bankACCOUNT");
-                    printTrace("current money -from $"+decreasedAmount+" -to $"+bankACCOUNT.get());
-                    printTrace("-state END -success OK -op "+operationName+"\n");
+                    printTrace("transfer -from " + customerKey + " -to bankACCOUNT");
+                    printTrace("current money -from $" + decreasedAmount + " -to $" + bankACCOUNT.get());
+                    printTrace("-state END -success OK -op " + operationName + "\n");
                     return true;
                 }
 
@@ -857,7 +856,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         // which means it is not able to perform the read/update etc.
         // hence increment the bankACCOUNT to set it as it was before.
         _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op "+operationName+"\n");
+        printTrace("-state END -success ERROR -op " + operationName + "\n");
         return false;
     }
 
@@ -870,8 +869,8 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         //@TODO:: do we need to disable autocommit and then explicitely call commit?
 
         String operationName = STATUS_NAME_TRANSFER_BETWEEN_ACC;
-        printTrace("\n-state START -op "+operationName);
-        
+        printTrace("\n-state START -op " + operationName);
+
         // choose a random key
         int first = nextKeynum();
         int second = first;
@@ -921,7 +920,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             if (db.read(table, customerFirstKey, fields, customerFirstValues).equals(Status.OK) && db.read(table, customerSecondKey, fields, customerSecondValues).equals(Status.OK)) {
                 int firstCustomerBalance = Integer.parseInt(customerFirstValues.get("field0").toString());
                 int secondCustomerBalance = Integer.parseInt(customerSecondValues.get("field0").toString());
-                
+
                 String from;
                 String to;
                 int amountOfTo;
@@ -930,25 +929,25 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
                 if (0 < firstCustomerBalance) {
                     firstCustomerBalance--;
                     secondCustomerBalance++;
-                    
+
                     to = customerSecondKey;
                     from = customerFirstKey;
                     amountOfTo = secondCustomerBalance;
                     amountOfFrom = firstCustomerBalance;
-                            
+
                 } else if (0 < secondCustomerBalance) {
-                    
+
                     firstCustomerBalance++;
                     secondCustomerBalance--;
-                    
+
                     to = customerFirstKey;
                     from = customerSecondKey;
                     amountOfTo = firstCustomerBalance;
                     amountOfFrom = secondCustomerBalance;
-                    
+
                 } else {// both of them are bankrupt !
                     _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
-                    printTrace("-state END -success ERROR -op "+operationName+"\n");
+                    printTrace("-state END -success ERROR -op " + operationName + "\n");
                     return false;
                 }
 
@@ -959,9 +958,9 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
                     _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.OK);
                     long en = System.currentTimeMillis();
                     Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, (int) (en - st));
-                    printTrace("transfer -from "+ from +" -to "+to);
-                    printTrace("current money -from $"+amountOfFrom+" -to $"+amountOfTo);
-                    printTrace("-state END -success OK -op "+operationName+"\n");
+                    printTrace("transfer -from " + from + " -to " + to);
+                    printTrace("current money -from $" + amountOfFrom + " -to $" + amountOfTo);
+                    printTrace("-state END -success OK -op " + operationName + "\n");
 
                     return true;
                 }
@@ -973,7 +972,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             // which means it is not able to perform the read/update etc.
             // hence increment the bankACCOUNT to set it as it was before.
             _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
-            printTrace("-state END -success ERROR -op "+operationName+"\n");
+            printTrace("-state END -success ERROR -op " + operationName + "\n");
             return false;
         } catch (Exception e) {
             System.out.println("\n" + e.toString() + "\n");
@@ -984,7 +983,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         // which means it is not able to perform the read/update etc.
         // hence increment the bankACCOUNT to set it as it was before.
         _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op "+operationName+"\n");
+        printTrace("-state END -success ERROR -op " + operationName + "\n");
         return false;
     }
 
@@ -1180,52 +1179,52 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
 
 /*
-# Sample Workload File
+ # Sample Workload File
 
-# Copyright (c) 2010 Yahoo! Inc. All rights reserved.                                                                                                                             
-#                                                                                                                                                                                 
-# Licensed under the Apache License, Version 2.0 (the "License"); you                                                                                                             
-# may not use this file except in compliance with the License. You                                                                                                                
-# may obtain a copy of the License at                                                                                                                                             
-#                                                                                                                                                                                 
-# http://www.apache.org/licenses/LICENSE-2.0                                                                                                                                      
-#                                                                                                                                                                                 
-# Unless required by applicable law or agreed to in writing, software                                                                                                             
-# distributed under the License is distributed on an "AS IS" BASIS,                                                                                                               
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or                                                                                                                 
-# implied. See the License for the specific language governing                                                                                                                    
-# permissions and limitations under the License. See accompanying                                                                                                                 
-# LICENSE file.                                                                                                                                                                   
-
-
-# Yahoo! Cloud System Benchmark
-# Workload A: Update heavy workload
-#   Application example: Session store recording recent actions
-#                        
-#   Read/update ratio: 50/50
-#   Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
-#   Request distribution: zipfian
-
-fieldcount=1
-readallfields=false
-
-printTransactionTrace = false
-
-recordcount=10
-operationcount=10
-workload=com.yahoo.ycsb.workloads.ClosedEconomyConstantAccountWorkload
-
-initialcash=2000
+ # Copyright (c) 2010 Yahoo! Inc. All rights reserved.                                                                                                                             
+ #                                                                                                                                                                                 
+ # Licensed under the Apache License, Version 2.0 (the "License"); you                                                                                                             
+ # may not use this file except in compliance with the License. You                                                                                                                
+ # may obtain a copy of the License at                                                                                                                                             
+ #                                                                                                                                                                                 
+ # http://www.apache.org/licenses/LICENSE-2.0                                                                                                                                      
+ #                                                                                                                                                                                 
+ # Unless required by applicable law or agreed to in writing, software                                                                                                             
+ # distributed under the License is distributed on an "AS IS" BASIS,                                                                                                               
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or                                                                                                                 
+ # implied. See the License for the specific language governing                                                                                                                    
+ # permissions and limitations under the License. See accompanying                                                                                                                 
+ # LICENSE file.                                                                                                                                                                   
 
 
-paytobankproportion=0.34
-rewardcustomerproportion=0.33
-transferbetweencustomerproportion=0.33
-readproportion=0.0
-updateproportion=0.0
-scanproportion=0
-insertproportion=0
+ # Yahoo! Cloud System Benchmark
+ # Workload A: Update heavy workload
+ #   Application example: Session store recording recent actions
+ #                        
+ #   Read/update ratio: 50/50
+ #   Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
+ #   Request distribution: zipfian
 
-requestdistribution=zipfian
+ fieldcount=1
+ readallfields=false
 
-*/
+ printTransactionTrace = false
+
+ recordcount=10
+ operationcount=10
+ workload=com.yahoo.ycsb.workloads.ClosedEconomyConstantAccountWorkload
+
+ initialcash=2000
+
+
+ paytobankproportion=0.34
+ rewardcustomerproportion=0.33
+ transferbetweencustomerproportion=0.33
+ readproportion=0.0
+ updateproportion=0.0
+ scanproportion=0
+ insertproportion=0
+
+ requestdistribution=zipfian
+
+ */

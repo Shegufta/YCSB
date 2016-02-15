@@ -382,7 +382,7 @@ public class ClosedEconomyWorkload extends Workload
         double readmodifywriteproportion = Double.parseDouble(p.getProperty(READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT));
 
         opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
-            recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
+        recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
         totalcash = Integer.parseInt(p.getProperty(TOTAL_CASH_PROPERTY, TOTAL_CASH_PROPERTY_DEFAULT));
         currenttotal = totalcash;
         currentcount = recordcount;
@@ -575,9 +575,6 @@ public class ClosedEconomyWorkload extends Workload
          _measurements.reportStatus(_operations.get(op), Status.ERROR);
          }
          */
-        
-        
-        
         actualopcount.addAndGet(1);
 
         return ret;
@@ -677,7 +674,7 @@ public class ClosedEconomyWorkload extends Workload
 
                 boolean isUpdateFirst = db.update(table, firstkey, firstvalues).equals(Status.OK);
                 boolean isUpdateSecond = db.update(table, secondkey, secondvalues).equals(Status.OK);
-                if ( (!isUpdateFirst) || (!isUpdateSecond) ) {
+                if ((!isUpdateFirst) || (!isUpdateSecond)) {
                     return false;
                 }
 
