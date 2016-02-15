@@ -96,5 +96,9 @@ public class Status
     public static final Status NOT_FOUND = new Status("NOT_FOUND", "The requested record was not found.");
     public static final Status NOT_IMPLEMENTED = new Status("NOT_IMPLEMENTED", "The operation is not implemented for the current binding.");
     public static final Status UNEXPECTED_STATE = new Status("UNEXPECTED_STATE", "The operation reported success, but the result was not as expected.");
+    public static final Status INSUFFICIENT_BALANCE = new Status("INSUFFICIENT_BALANCE", "Both account has zero balance, so no money transfer possible !");
+    public static final Status ERROR_WHILE_READING = new Status("ERROR_WHILE_READ", "Faces problem while reading from any one of those two accounts");
+    public static final Status ERROR_WHILE_UPDATING = new Status("ERROR_WHILE_UPDATE", "Faces problem while updating any one of those two accounts");
+    public static final Status TRANSACTION_IN_PROGRESS = new Status("TRANSACTION_IN_PROGRESS", "Transaction in progress ");
 
 }

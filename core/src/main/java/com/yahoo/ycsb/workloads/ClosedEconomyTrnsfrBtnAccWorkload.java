@@ -116,6 +116,14 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
     public static final String TRANSACTION_TRACE_ON = "printTransactionTrace";
     public static final String TRANSACTION_TRACE_ON_DEFAULT = "false";
     boolean printTransactionTrace;
+    
+    public static final String GENERATED_KEYS_IN_READ_OPERATION = "printKeysInReadOperation";
+    public static final String GENERATED_KEYS_IN_READ_OPERATION_DEFAULT = "false";
+    boolean printKeysInReadOperation;
+    
+    public static final String GENERATED_KEYS_IN_TRANSFER_OPERATION = "printKeysInTransferOperation";
+    public static final String GENERATED_KEYS_IN_TRANSFER_OPERATION_DEFAULT = "false";
+    boolean printKeysInTransferOperation;
 
     /**
      * The name of the property for the field length distribution. Options are
@@ -172,18 +180,14 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
      */
     //public static final String READ_ALL_FIELDS_PROPERTY = "readallfields";
     //public static final String READ_ALL_FIELDS_PROPERTY_DEFAULT = "true";
-
     //boolean readallfields;
-
     /**
      * The name of the property for deciding whether to write one field (false)
      * or all fields (true) of a record.
      */
     //public static final String WRITE_ALL_FIELDS_PROPERTY = "writeallfields";
     //public static final String WRITE_ALL_FIELDS_PROPERTY_DEFAULT = "false";
-
     //boolean writeallfields;
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /**
      * The name of the property for the proportion of transactions where
@@ -384,6 +388,21 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
             System.out.println(str);
         }
     }
+    
+    public void printReadKey(int keynum)
+    {
+        if (this.printKeysInReadOperation) {
+            System.out.println("*** R\t"+keynum);
+        }
+    }
+    
+    public void printTransactionKey(int customerFirstAcc, int customerSecondAcc)
+    {
+        if(this.printKeysInTransferOperation)
+        {
+            System.out.println("*** T\t"+customerFirstAcc+"\t"+customerSecondAcc);
+        }
+    }
 
     /**
      * Initialize the scenario. Called once, in the main client thread, before
@@ -406,7 +425,9 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
         double transferbetweencustomerproportion = Double.parseDouble(p.getProperty(TRANS_BETWEEN_CUSTOMER_PROPERTY, TRANS_BETWEEN_CUSTOMER_PROPERTY_DEFAULT));//shegufta
 
         this.printTransactionTrace = Boolean.parseBoolean(p.getProperty(TRANSACTION_TRACE_ON, TRANSACTION_TRACE_ON_DEFAULT));
-
+        this.printKeysInReadOperation = Boolean.parseBoolean(p.getProperty(GENERATED_KEYS_IN_READ_OPERATION, GENERATED_KEYS_IN_READ_OPERATION_DEFAULT));
+        this.printKeysInTransferOperation = Boolean.parseBoolean(p.getProperty(GENERATED_KEYS_IN_TRANSFER_OPERATION, GENERATED_KEYS_IN_TRANSFER_OPERATION_DEFAULT));
+        
         opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
 
         if (p.containsKey(Client.RECORD_COUNT_PROPERTY))// added by shegufta
@@ -437,6 +458,8 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
         System.out.println("INITIAL CASH: per account = " + initialCash);
         System.out.println("this.totalcash = initialCash * (recordcount) = " + this.totalcash);
         System.out.println("\nisTransactionTraceOn = " + printTransactionTrace);
+        System.out.println("\nprintKeysInReadOperation = " + printKeysInReadOperation);
+        System.out.println("\nprintKeysInTransferOperation = " + printKeysInTransferOperation);
         System.out.println("\nOPERATION RATIO:");
         System.out.println("readproportion = " + readproportion);
         //System.out.println("updateproportion = " + updateproportion);
@@ -464,7 +487,6 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
 
         //readallfields = Boolean.parseBoolean(p.getProperty(READ_ALL_FIELDS_PROPERTY, READ_ALL_FIELDS_PROPERTY_DEFAULT));
         //writeallfields = Boolean.parseBoolean(p.getProperty(WRITE_ALL_FIELDS_PROPERTY, WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
-
         if (p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") == 0) {
             orderedinserts = false;
         } else if (requestdistrib.compareTo("exponential") == 0) {
@@ -597,58 +619,47 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
          3) The READ operation will be as it is before
          4) There wont be any DELETE operation
          5) There wont be any explicit UPDATE operation
-         6) In Acon's code, update is not doing as it is said in his paper. According to the paper,
-         when deleting an account, all of its amount will be added to the Banks account (say at $BANK_ACC). When an UPDATE
-         is performed, it will read an account ($ACC_n) deduct one dollar from $BANK_ACC, and add it with $ACC_n.
-         The whole process was not implemented in the paper. Also I feel that, when we delete an account, its key needs
-         to be deleted from the datastructure so that it wont be called for next operations. I might implement that scheme later,
-         but right now just to keep things simple, I assume that there is no Delete operation!
-         7) If I understand the code correctly, current YCSB+T code does not use doTransactionReadModifyWrite() at all.
-         I am planning to use it in my code for:
-         7a) Transfer between account: the idea is same as the original code
-         7b) Pay bill to bank: $1 will be transferred from an account to bank's account. It will be added to the $BANK_ACC
-         7c) Reward customer: Bank will reward a customer. it will transfer $1 from $BANK_ACC to its customer's account
-         Initially these three operations will be equally probable.
-         8) SCAN: i m not sure if we need it or not !  Lets think about it later :)
+         6) Unlinke my other workload, in this workload there wont be any bank account. There will be only
+         customer account and balances will betransferred between two customer account. Hence there is only
+         a single operation to do this "doTransactionTransferBetweenCustomer(db)"
          9) Right now the program takes the amount of TotalCash as an input and equally divide it among all the 'n' records.
          because of the integer variables, we might loose some numbers while dividing.
          So why not think it from the opposite way?
          Now we will rather take InitialCash as an input instead of TotalCash.
-         We know the total number of account. PLUS in our code we will assign some amount to the $BANK_ACC
-         Hence, now the TotalCash will be  {(1+n)*InitialCash}
+         We know the total number of account.
+         Hence, now the TotalCash will be  {(n)*InitialCash}
          In this process we wont loose any number because of division!
          */
-        boolean ret = true;
-        long st_microSec = System.nanoTime() / 1000;
 
+        Status transactionStatus = Status.TRANSACTION_IN_PROGRESS;
         String op = operationchooser.nextString();
 
+        long st_microSec = System.nanoTime() / 1000;
+
         if (op.compareTo("READ") == 0) {
-            ret = doTransactionRead(db);
+            transactionStatus = doTransactionRead(db);
         } else if (op.compareTo(STATUS_NAME_TRANSFER_BETWEEN_ACC) == 0) {
-            ret = doTransactionTransferBetweenCustomer(db);
+            transactionStatus = doTransactionTransferBetweenCustomer(db);
         } else {
             System.out.println("\n\tERROR: unknown operation");
             System.exit(1);
         }
-
         long en_microSec = System.nanoTime() / 1000;
-        //long en = System.currentTimeMillis();
+
         if (null == _operations.get(op)) {
             System.out.println("\n\toperation " + op + " not inserted in _operations");
             System.exit(1);
         }
         _measurements.measure(_operations.get(op), (int) ((en_microSec - st_microSec)));
-
-        if (ret) {
-            _measurements.reportStatus(_operations.get(op), Status.OK);
-        } else {
-            _measurements.reportStatus(_operations.get(op), Status.UNEXPECTED_STATE);
-        }
+        _measurements.reportStatus(_operations.get(op), transactionStatus);
 
         actualopcount.addAndGet(1);
 
-        return ret;
+        if (transactionStatus.equals(Status.OK)) {
+            return true;
+        } else {
+            return false;
+        }
 
     }
 
@@ -668,26 +679,28 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
         return keynum;
     }
 
-    public boolean doTransactionRead(DB db)
+    public Status doTransactionRead(DB db)
     {
         // choose a random key
         int keynum = nextKeynum();
         String keyname = buildKeyName(keynum);
         
+        this.printReadKey(keynum);
+
         String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
         HashSet<String> fields = new HashSet<String>();
         fields.add(fieldname);
 
         HashMap<String, ByteIterator> firstvalues = new HashMap<String, ByteIterator>();
 
-        return (db.read(table, keyname, fields, firstvalues).equals(Status.OK));
+        return db.read(table, keyname, fields, firstvalues);
     }
 
     /*
      *@author: shegufta
      *transfer money from one customer account to another one.
      */
-    public boolean doTransactionTransferBetweenCustomer(DB db)
+    public Status doTransactionTransferBetweenCustomer(DB db)
     {
         //@TODO:: do we need to disable autocommit and then explicitely call commit?
 
@@ -707,28 +720,34 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
                 System.exit(1);
             }
         }
+        
+        this.printTransactionKey(customerFirstAcc , customerSecondAcc );
 
         String customerFirstKey = buildKeyName(customerFirstAcc);
         String customerSecondKey = buildKeyName(customerSecondAcc);
 
-        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
+        String fieldname = "field0";
         HashSet<String> fields = new HashSet<String>();
         fields.add(fieldname);
 
         HashMap<String, ByteIterator> customerFirstValues = new HashMap<String, ByteIterator>();
         HashMap<String, ByteIterator> customerSecondValues = new HashMap<String, ByteIterator>();
 
+        Status transactionStatus = Status.TRANSACTION_IN_PROGRESS;
+
         try {
             // do the transaction
+
+            db.start();
 
             if (db.read(table, customerFirstKey, fields, customerFirstValues).equals(Status.OK) && db.read(table, customerSecondKey, fields, customerSecondValues).equals(Status.OK)) {
                 int firstCustomerBalance = Integer.parseInt(customerFirstValues.get("field0").toString());
                 int secondCustomerBalance = Integer.parseInt(customerSecondValues.get("field0").toString());
 
-                String from;
-                String to;
-                int amountOfTo;
-                int amountOfFrom;
+                String from = "NOT INITIALIZED";
+                String to = "NOT INITIALIZED";
+                int amountOfTo = -1234;
+                int amountOfFrom = -1234;
 
                 if (0 < firstCustomerBalance) {
                     firstCustomerBalance--;
@@ -752,42 +771,49 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
                 } else {// both of them are bankrupt !
                     //_measurements.reportStatus(ClosedEconomyTrnsfrBtnAccWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
                     printTrace("-state END -success ERROR -op " + operationName + "\n");
-                    return false;
+
+                    transactionStatus = Status.INSUFFICIENT_BALANCE;
                 }
 
-                customerFirstValues.clear();
-                customerFirstValues.put("field0", new StringByteIterator(Integer.toString(firstCustomerBalance)));
-                customerSecondValues.clear();
-                customerSecondValues.put("field0", new StringByteIterator(Integer.toString(secondCustomerBalance)));
+                if (transactionStatus.equals(Status.TRANSACTION_IN_PROGRESS)) {
 
-                if ((db.update(table, customerFirstKey, customerFirstValues).equals(Status.OK)) && (db.update(table, customerSecondKey, customerSecondValues).equals(Status.OK))) {
-                    printTrace("transfer -from " + from + " -to " + to);
-                    printTrace("current money -from $" + amountOfFrom + " -to $" + amountOfTo);
-                    printTrace("-state END -success OK -op " + operationName + "\n");
+                    customerFirstValues.clear();
+                    customerFirstValues.put("field0", new StringByteIterator(Integer.toString(firstCustomerBalance)));
+                    customerSecondValues.clear();
+                    customerSecondValues.put("field0", new StringByteIterator(Integer.toString(secondCustomerBalance)));
 
-                    return true;
+                    if ((db.update(table, customerFirstKey, customerFirstValues).equals(Status.OK)) && (db.update(table, customerSecondKey, customerSecondValues).equals(Status.OK))) {
+                        printTrace("transfer -from " + from + " -to " + to);
+                        printTrace("current money -from $" + amountOfFrom + " -to $" + amountOfTo);
+                        printTrace("-state END -success OK -op " + operationName + "\n");
+                        transactionStatus = Status.OK;
+                    } else {
+                        transactionStatus = Status.ERROR_WHILE_UPDATING;
+                    }
                 }
 
+            } else {
+                printTrace("-state END -success ERROR -op " + operationName + "\n");
+                transactionStatus = Status.ERROR_WHILE_READING;
             }
 
-            // if the code works well, it should not reach this point...
-            // it will reach this point only if there is something wrong
-            // which means it is not able to perform the read/update etc.
-            // hence increment the bankACCOUNT to set it as it was before.
-            //_measurements.reportStatus(ClosedEconomyTrnsfrBtnAccWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
-            printTrace("-state END -success ERROR -op " + operationName + "\n");
-            return false;
         } catch (Exception e) {
             System.out.println("\n" + e.toString() + "\n");
+            System.out.println("134aqw351 Inside ClosedEconomyTrnsfrBtnAccWorkload.java");
+            System.exit(1);
+        } finally {
+            try {
+                if (transactionStatus.equals(Status.OK)) {
+                    db.commit();
+                } else {
+                    db.abort();
+                }
+            } catch (DBException ex) {
+                transactionStatus = Status.UNEXPECTED_STATE;
+            }
         }
 
-        // if the code works perfectly, it should not reach this point...
-        // it will reach this point only if there is something wrong
-        // which means it is not able to perform the read/update etc.
-        // hence increment the bankACCOUNT to set it as it was before.
-        //_measurements.reportStatus(ClosedEconomyTrnsfrBtnAccWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op " + operationName + "\n");
-        return false;
+        return transactionStatus;
     }
 
     public boolean doTransactionInsert(DB db)
@@ -861,52 +887,54 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
 
 
 /*
-#Sample Workload File
-# Copyright (c) 2010 Yahoo! Inc. All rights reserved.                                                                                                                             
-#                                                                                                                                                                                 
-# Licensed under the Apache License, Version 2.0 (the "License"); you                                                                                                             
-# may not use this file except in compliance with the License. You                                                                                                                
-# may obtain a copy of the License at                                                                                                                                             
-#                                                                                                                                                                                 
-# http://www.apache.org/licenses/LICENSE-2.0                                                                                                                                      
-#                                                                                                                                                                                 
-# Unless required by applicable law or agreed to in writing, software                                                                                                             
-# distributed under the License is distributed on an "AS IS" BASIS,                                                                                                               
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or                                                                                                                 
-# implied. See the License for the specific language governing                                                                                                                    
-# permissions and limitations under the License. See accompanying                                                                                                                 
-# LICENSE file.                                                                                                                                                                   
+ #Sample Workload File
+ # Copyright (c) 2010 Yahoo! Inc. All rights reserved.                                                                                                                             
+ #                                                                                                                                                                                 
+ # Licensed under the Apache License, Version 2.0 (the "License"); you                                                                                                             
+ # may not use this file except in compliance with the License. You                                                                                                                
+ # may obtain a copy of the License at                                                                                                                                             
+ #                                                                                                                                                                                 
+ # http://www.apache.org/licenses/LICENSE-2.0                                                                                                                                      
+ #                                                                                                                                                                                 
+ # Unless required by applicable law or agreed to in writing, software                                                                                                             
+ # distributed under the License is distributed on an "AS IS" BASIS,                                                                                                               
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or                                                                                                                 
+ # implied. See the License for the specific language governing                                                                                                                    
+ # permissions and limitations under the License. See accompanying                                                                                                                 
+ # LICENSE file.                                                                                                                                                                   
 
 
-# Yahoo! Cloud System Benchmark
-# Workload A: Update heavy workload
-#   Application example: Session store recording recent actions
-#                        
-#   Read/update ratio: 50/50
-#   Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
-#   Request distribution: zipfian
+ # Yahoo! Cloud System Benchmark
+ # Workload A: Update heavy workload
+ #   Application example: Session store recording recent actions
+ #                        
+ #   Read/update ratio: 50/50
+ #   Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
+ #   Request distribution: zipfian
 
-fieldcount=1
-threadcount = 1
+ fieldcount=1
+ threadcount = 1
 
-printTransactionTrace = false
+ printTransactionTrace = false
+ printKeysInReadOperation = false
+ printKeysInTransferOperation = false
 
-recordcount=100
-operationcount=1000
-workload=com.yahoo.ycsb.workloads.ClosedEconomyTrnsfrBtnAccWorkload
+ recordcount=100
+ operationcount=1000
+ workload=com.yahoo.ycsb.workloads.ClosedEconomyTrnsfrBtnAccWorkload
 
-initialcash=2000
+ initialcash=2000
 
-requestdistribution=zipfian
-#requestdistribution=uniform
+ requestdistribution=zipfian
+ #requestdistribution=uniform
 
-transferbetweencustomerproportion=0.0
-readproportion=1.0
+ transferbetweencustomerproportion=0.0
+ readproportion=1.0
 
-#paytobankproportion=0.34
-#rewardcustomerproportion=0.33
-#updateproportion=0.0
-#scanproportion=0
-#insertproportion=0
+ #paytobankproportion=0.34
+ #rewardcustomerproportion=0.33
+ #updateproportion=0.0
+ #scanproportion=0
+ #insertproportion=0
 
-*/
+ */
