@@ -15,7 +15,7 @@
  */
 
 /*
- *@author: https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyConstantAccountWorkload.java
+ *@author: https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyTrnsfrBtnAccWorkload.java
  */
 package com.yahoo.ycsb.workloads;
 
@@ -81,7 +81,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * ("ordered"), or in hashed order ("hashed") (default: hashed)
  * </ul>
  */
-public class ClosedEconomyConstantAccountWorkload extends Workload
+public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
 {
 
     /**
@@ -108,13 +108,13 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
     int fieldcount;
 
-    public static final String STATUS_NAME_REWARD_CUSTOMER = "RewardCustomer"; //shegufta
-    public static final String STATUS_NAME_PAY_TO_BANK = "PayToBank"; //shegufta
+    ////public static final String STATUS_NAME_REWARD_CUSTOMER = "RewardCustomer"; //shegufta
+    ////public static final String STATUS_NAME_PAY_TO_BANK = "PayToBank"; //shegufta
     public static final String STATUS_NAME_TRANSFER_BETWEEN_ACC = "TransferBetweenAcc"; //shegufta
     public static final String OPERATION_COUNT_PROPERTY = "operationcount";
-    
-    public static final String TRANSACTION_TRACE_ON="printTransactionTrace";
-    public static final String TRANSACTION_TRACE_ON_DEFAULT="false";
+
+    public static final String TRANSACTION_TRACE_ON = "printTransactionTrace";
+    public static final String TRANSACTION_TRACE_ON_DEFAULT = "false";
     boolean printTransactionTrace;
 
     /**
@@ -170,38 +170,35 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
      * The name of the property for deciding whether to read one field (false)
      * or all fields (true) of a record.
      */
-    public static final String READ_ALL_FIELDS_PROPERTY = "readallfields";
-    public static final String READ_ALL_FIELDS_PROPERTY_DEFAULT = "true";
+    //public static final String READ_ALL_FIELDS_PROPERTY = "readallfields";
+    //public static final String READ_ALL_FIELDS_PROPERTY_DEFAULT = "true";
 
-    boolean readallfields;
+    //boolean readallfields;
 
     /**
      * The name of the property for deciding whether to write one field (false)
      * or all fields (true) of a record.
      */
-    public static final String WRITE_ALL_FIELDS_PROPERTY = "writeallfields";
-    public static final String WRITE_ALL_FIELDS_PROPERTY_DEFAULT = "false";
+    //public static final String WRITE_ALL_FIELDS_PROPERTY = "writeallfields";
+    //public static final String WRITE_ALL_FIELDS_PROPERTY_DEFAULT = "false";
 
-    boolean writeallfields;
+    //boolean writeallfields;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /**
      * The name of the property for the proportion of transactions where
      * customers give money to bank.
      */
-    public static final String PAY_TO_BANK_PROPERTY = "paytobankproportion";
-    public static final String PAY_TO_BANK_PROPERTY_DEFAULT = "0.25";
-
+    ////public static final String PAY_TO_BANK_PROPERTY = "paytobankproportion";
+    ////public static final String PAY_TO_BANK_PROPERTY_DEFAULT = "0.25";
     /**
      * The name of the property for the proportion of transactions where bank
      * gives reward to its customer.
      */
-    public static final String REWARD_CUSTOMER_PROPERTY = "rewardcustomerproportion";
-    public static final String REWARD_CUSTOMER_PROPERTY_DEFAULT = "0.25";
-
+    ////public static final String REWARD_CUSTOMER_PROPERTY = "rewardcustomerproportion";
+    ////public static final String REWARD_CUSTOMER_PROPERTY_DEFAULT = "0.25";
     /**
-     * The name of the property for the proportion of transactions where bank
-     * gives reward to its customer.
+     * Tx between acc
      */
     public static final String TRANS_BETWEEN_CUSTOMER_PROPERTY = "transferbetweencustomerproportion";
     public static final String TRANS_BETWEEN_CUSTOMER_PROPERTY_DEFAULT = "0.50";
@@ -217,11 +214,11 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
      * The name of the property for the proportion of transactions that are
      * scans.
      */
-    public static final String SCAN_PROPORTION_PROPERTY = "scanproportion";
-    public static final String SCAN_PROPORTION_PROPERTY_DEFAULT = "0.0";
+    ////public static final String SCAN_PROPORTION_PROPERTY = "scanproportion";
+    ////public static final String SCAN_PROPORTION_PROPERTY_DEFAULT = "0.0";
 
     /*
-     *@NOTE: shegufta:: in this ClosedEconomyConstantAccountWorkload, we will not use update, insert or readmodifywrite... Hence they are commented out...
+     *@NOTE: shegufta:: in this ClosedEconomyTrnsfrBtnAccWorkload, we will not use update, insert or readmodifywrite... Hence they are commented out...
      */
     /**
      * The name of the property for the proportion of transactions that are
@@ -311,12 +308,12 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     {
         {
             put("READ", "TX-READ");
-            put("UPDATE", "TX-UPDATE");
-            put("INSERT", "TX-INSERT");
-            put("SCAN", "TX-SCAN");
-            put("READMODIFYWRITE", "TX-READMODIFYWRITE");
-            put(STATUS_NAME_PAY_TO_BANK, "TX-" + STATUS_NAME_PAY_TO_BANK);
-            put(STATUS_NAME_REWARD_CUSTOMER, "TX-" + STATUS_NAME_REWARD_CUSTOMER);
+            //put("UPDATE", "TX-UPDATE");
+            //put("INSERT", "TX-INSERT");
+            //put("SCAN", "TX-SCAN");
+            //put("READMODIFYWRITE", "TX-READMODIFYWRITE");
+            //put(STATUS_NAME_PAY_TO_BANK, "TX-" + STATUS_NAME_PAY_TO_BANK);
+            //put(STATUS_NAME_REWARD_CUSTOMER, "TX-" + STATUS_NAME_REWARD_CUSTOMER);
             put(STATUS_NAME_TRANSFER_BETWEEN_ACC, "TX-" + STATUS_NAME_TRANSFER_BETWEEN_ACC);
         }
     };
@@ -340,13 +337,12 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     int recordcount;
     int opcount;
     AtomicInteger actualopcount = new AtomicInteger(0);
-    AtomicInteger bankACCOUNT = null;//Shegufta
+    ////AtomicInteger bankACCOUNT = null;//Shegufta
     private int totalcash;  // shegufta: I am using this variable in a different way.
-    //From now on, total cash will be initialCash*(totalRecordCount+1)....
-    //the 1 is added for the bankACCOUNT
-    private int initialCash; // shegufta: initial cash amount for each record and also for the bankACCOUNT;
+    //From now on, total cash will be initialCash*(totalRecordCount)....
+    private int initialCash; // shegufta: initial cash amount for each record;
     //private int currenttotal;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
-    //private int currentcount; // shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
+    //private int currentcount;// shegufta:: it is not used in the main YCSB+T code, hence i have commented it out
     //private int initialvalue;// shegufta:: I have replaced it by initialCash
 
     protected static IntegerGenerator getFieldLengthGenerator(Properties p) throws WorkloadException
@@ -360,10 +356,10 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         int fieldlength = Integer.parseInt(p.getProperty(FIELD_LENGTH_PROPERTY, FIELD_LENGTH_PROPERTY_DEFAULT));
         String fieldlengthhistogram = p.getProperty(FIELD_LENGTH_HISTOGRAM_FILE_PROPERTY, FIELD_LENGTH_HISTOGRAM_FILE_PROPERTY_DEFAULT);
         if (fieldlengthdistribution.compareTo("constant") == 0) {
-            fieldlengthgenerator = new ConstantIntegerGenerator(initialCash);
+            fieldlengthgenerator = new ConstantIntegerGenerator(fieldlength);
             //fieldlengthgenerator = new ConstantIntegerGenerator(total_cash / num_records);// shegufta:: I have commented out this line.
         } else if (fieldlengthdistribution.compareTo("uniform") == 0) {
-            fieldlengthgenerator = new UniformIntegerGenerator(1, initialCash);
+            fieldlengthgenerator = new UniformIntegerGenerator(1, fieldlength);
             //fieldlengthgenerator = new UniformIntegerGenerator(1, total_cash / num_records);// shegufta:: I have commented out this line.
         } else if (fieldlengthdistribution.compareTo("zipfian") == 0) {
             fieldlengthgenerator = new ZipfianGenerator(1, fieldlength);
@@ -380,15 +376,15 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     }
 
     /*
-    *@author: shegufta
-    */
+     *@author: shegufta
+     */
     public void printTrace(String str)
     {
-        if(this.printTransactionTrace)
-        {
+        if (this.printTransactionTrace) {
             System.out.println(str);
         }
     }
+
     /**
      * Initialize the scenario. Called once, in the main client thread, before
      * any operations are started.
@@ -396,21 +392,21 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     public void init(Properties p) throws WorkloadException
     {
         table = p.getProperty(TABLENAME_PROPERTY, TABLENAME_PROPERTY_DEFAULT);
-        fieldlengthgenerator = ClosedEconomyConstantAccountWorkload.getFieldLengthGenerator(p);
+        fieldlengthgenerator = ClosedEconomyTrnsfrBtnAccWorkload.getFieldLengthGenerator(p);
         fieldcount = Integer.parseInt(p.getProperty(FIELD_COUNT_PROPERTY, FIELD_COUNT_PROPERTY_DEFAULT));
 
         double readproportion = Double.parseDouble(p.getProperty(READ_PROPORTION_PROPERTY, READ_PROPORTION_PROPERTY_DEFAULT));
         //double updateproportion = Double.parseDouble(p.getProperty(UPDATE_PROPORTION_PROPERTY, UPDATE_PROPORTION_PROPERTY_DEFAULT));
         double insertproportion = Double.parseDouble(p.getProperty(INSERT_PROPORTION_PROPERTY, INSERT_PROPORTION_PROPERTY_DEFAULT));// shegufta:: it is required for the zipfandistribution... otherwise it is NOT required for our current workload
-        double scanproportion = Double.parseDouble(p.getProperty(SCAN_PROPORTION_PROPERTY, SCAN_PROPORTION_PROPERTY_DEFAULT));
+        //double scanproportion = Double.parseDouble(p.getProperty(SCAN_PROPORTION_PROPERTY, SCAN_PROPORTION_PROPERTY_DEFAULT));
         //double readmodifywriteproportion = Double.parseDouble(p.getProperty(READMODIFYWRITE_PROPORTION_PROPERTY, READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT));
 
-        double paytobankproportion = Double.parseDouble(p.getProperty(PAY_TO_BANK_PROPERTY, PAY_TO_BANK_PROPERTY_DEFAULT));//shegufta
-        double rewardcustomerproportion = Double.parseDouble(p.getProperty(REWARD_CUSTOMER_PROPERTY, REWARD_CUSTOMER_PROPERTY_DEFAULT));//shegufta
+        ////double paytobankproportion = Double.parseDouble(p.getProperty(PAY_TO_BANK_PROPERTY, PAY_TO_BANK_PROPERTY_DEFAULT));//shegufta
+        ////double rewardcustomerproportion = Double.parseDouble(p.getProperty(REWARD_CUSTOMER_PROPERTY, REWARD_CUSTOMER_PROPERTY_DEFAULT));//shegufta
         double transferbetweencustomerproportion = Double.parseDouble(p.getProperty(TRANS_BETWEEN_CUSTOMER_PROPERTY, TRANS_BETWEEN_CUSTOMER_PROPERTY_DEFAULT));//shegufta
 
         this.printTransactionTrace = Boolean.parseBoolean(p.getProperty(TRANSACTION_TRACE_ON, TRANSACTION_TRACE_ON_DEFAULT));
-        
+
         opcount = Integer.parseInt(p.getProperty(OPERATION_COUNT_PROPERTY, "0"));
 
         if (p.containsKey(Client.RECORD_COUNT_PROPERTY))// added by shegufta
@@ -418,46 +414,47 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             recordcount = Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
         } else {
             System.out.println("\n\nERROR: the property file does not contain " + Client.RECORD_COUNT_PROPERTY);
-            System.out.println("inside ClosedEconomyConstantAccountWorkload.java:: public void init(Properties p)");
+            System.out.println("inside ClosedEconomyTrnsfrBtnAccWorkload.java:: public void init(Properties p)");
             System.exit(1);
         }
-        
+
         this.initialCash = Integer.parseInt(p.getProperty(INITIAL_CASH_PROPERTY, INITIAL_CASH_PROPERTY_DEFAULT));//shegufta
 
-        int maxPossibleInitialCash = Integer.MAX_VALUE / (1 + recordcount);
+        int maxPossibleInitialCash = Integer.MAX_VALUE / (recordcount);
         if (maxPossibleInitialCash < this.initialCash) {//shegufta :: check for maximum possible initial cash
             System.out.println("\n\n\nERROR: initialCash = " + initialCash + " exceeds the maxPossibleInitialCash which is " + maxPossibleInitialCash);
-            System.out.println("while calculating the totalcash = initialCash * (1 + recordcount), totalcash will overflow ( it is an integer)");
+            System.out.println("while calculating the totalcash = initialCash * (recordcount), totalcash will overflow ( it is an integer)");
+            System.out.println("Here recordcount = " + recordcount);
             System.exit(1);
         }
 
-        this.totalcash = initialCash * (1 + recordcount);
-        this.bankACCOUNT = new AtomicInteger(this.initialCash);//Shegufta
-        
+        this.totalcash = initialCash * (recordcount);
+        ////this.bankACCOUNT = new AtomicInteger(this.initialCash);//Shegufta
+
         System.out.println("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        System.out.println("opcount = "+opcount);
-        System.out.println("recordcount = "+recordcount+"\n");
-        System.out.println("INITIAL CASH: per account = "+initialCash+" (including bankACCOUNT which is not stored in database)");
-        System.out.println("this.totalcash = initialCash * (1 + recordcount) = "+this.totalcash);
-        System.out.println("\nisTransactionTraceOn = "+printTransactionTrace);
+        System.out.println("opcount = " + opcount);
+        System.out.println("recordcount = " + recordcount + "\n");
+        System.out.println("INITIAL CASH: per account = " + initialCash);
+        System.out.println("this.totalcash = initialCash * (recordcount) = " + this.totalcash);
+        System.out.println("\nisTransactionTraceOn = " + printTransactionTrace);
         System.out.println("\nOPERATION RATIO:");
         System.out.println("readproportion = " + readproportion);
         //System.out.println("updateproportion = " + updateproportion);
         //System.out.println("insertproportion = " + insertproportion);
-        System.out.println("scanproportion = " + scanproportion);
+        //System.out.println("scanproportion = " + scanproportion);
         //System.out.println("readmodifywriteproportion = " + readmodifywriteproportion);
-        System.out.println("paytobankproportion = " + paytobankproportion);
-        System.out.println("rewardcustomerproportion = " + rewardcustomerproportion);
+        //System.out.println("paytobankproportion = " + paytobankproportion);
+        //System.out.println("rewardcustomerproportion = " + rewardcustomerproportion);
         System.out.println("transferbetweencustomerproportion = " + transferbetweencustomerproportion);
-        double totalOptRatio = readproportion + scanproportion;//updateproportion + insertproportion + readmodifywriteproportion;
-        totalOptRatio += paytobankproportion + rewardcustomerproportion + transferbetweencustomerproportion;
+        double totalOptRatio = readproportion + transferbetweencustomerproportion;
+        //double totalOptRatio = readproportion + scanproportion;//updateproportion + insertproportion + readmodifywriteproportion;
+        //totalOptRatio += paytobankproportion + rewardcustomerproportion + transferbetweencustomerproportion;
 
         System.out.println("totalOptRatio = " + totalOptRatio);
         if (1.0 < totalOptRatio) {
             System.out.println("\n\t\tWARNING: total ratio should be equals to 1.0\n");
         }
         System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
-        
 
         String requestdistrib = p.getProperty(REQUEST_DISTRIBUTION_PROPERTY, REQUEST_DISTRIBUTION_PROPERTY_DEFAULT);
         int maxscanlength = Integer.parseInt(p.getProperty(MAX_SCAN_LENGTH_PROPERTY, MAX_SCAN_LENGTH_PROPERTY_DEFAULT));
@@ -465,8 +462,8 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
         int insertstart = Integer.parseInt(p.getProperty(INSERT_START_PROPERTY, INSERT_START_PROPERTY_DEFAULT));
 
-        readallfields = Boolean.parseBoolean(p.getProperty(READ_ALL_FIELDS_PROPERTY, READ_ALL_FIELDS_PROPERTY_DEFAULT));
-        writeallfields = Boolean.parseBoolean(p.getProperty(WRITE_ALL_FIELDS_PROPERTY, WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
+        //readallfields = Boolean.parseBoolean(p.getProperty(READ_ALL_FIELDS_PROPERTY, READ_ALL_FIELDS_PROPERTY_DEFAULT));
+        //writeallfields = Boolean.parseBoolean(p.getProperty(WRITE_ALL_FIELDS_PROPERTY, WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
 
         if (p.getProperty(INSERT_ORDER_PROPERTY, INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed") == 0) {
             orderedinserts = false;
@@ -481,31 +478,10 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         keysequence = new CounterGenerator(insertstart);
         validation_keysequence = new CounterGenerator(insertstart);
         operationchooser = new DiscreteGenerator();
-        if (readproportion > 0) {
+        if (readproportion > 0.0) {
             operationchooser.addValue(readproportion, "READ");
         }
-        if (scanproportion > 0) {
-            operationchooser.addValue(scanproportion, "SCAN");
-        }
-        /*
-         if (updateproportion > 0) {
-         operationchooser.addValue(updateproportion, "UPDATE");
-         }
 
-         if (insertproportion > 0) {
-         operationchooser.addValue(insertproportion, "INSERT");
-         }
-
-         if (readmodifywriteproportion > 0) {
-         operationchooser.addValue(readmodifywriteproportion, "READMODIFYWRITE");
-         }
-         */
-        if (paytobankproportion > 0.0) {
-            operationchooser.addValue(paytobankproportion, STATUS_NAME_PAY_TO_BANK);
-        }
-        if (rewardcustomerproportion > 0.0) {
-            operationchooser.addValue(rewardcustomerproportion, STATUS_NAME_REWARD_CUSTOMER);
-        }
         if (transferbetweencustomerproportion > 0.0) {
             operationchooser.addValue(transferbetweencustomerproportion, STATUS_NAME_TRANSFER_BETWEEN_ACC);
         }
@@ -643,18 +619,12 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
          In this process we wont loose any number because of division!
          */
         boolean ret = true;
-        long st = System.nanoTime();
+        long st_microSec = System.nanoTime() / 1000;
 
         String op = operationchooser.nextString();
 
         if (op.compareTo("READ") == 0) {
             ret = doTransactionRead(db);
-        } else if (op.compareTo("SCAN") == 0) {
-            ret = doTransactionScan(db);
-        } else if (op.compareTo(STATUS_NAME_PAY_TO_BANK) == 0) { // shegufta
-            ret = doTransactionPayToBank(db);
-        } else if (op.compareTo(STATUS_NAME_REWARD_CUSTOMER) == 0) {
-            ret = doTransactionRewardCustomer(db);
         } else if (op.compareTo(STATUS_NAME_TRANSFER_BETWEEN_ACC) == 0) {
             ret = doTransactionTransferBetweenCustomer(db);
         } else {
@@ -662,50 +632,24 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             System.exit(1);
         }
 
-        /*else if (op.compareTo("UPDATE") == 0) {
-         ret = doTransactionUpdate(db);
-         } else if (op.compareTo("INSERT") == 0) {
-         ret = doTransactionInsert(db);
-         } else {
-         ret = doTransactionReadModifyWrite(db);
-         }*/
-        long en = System.nanoTime();
+        long en_microSec = System.nanoTime() / 1000;
+        //long en = System.currentTimeMillis();
         if (null == _operations.get(op)) {
             System.out.println("\n\toperation " + op + " not inserted in _operations");
             System.exit(1);
         }
-        _measurements.measure(_operations.get(op), (int) ((en - st) / 1000));
+        _measurements.measure(_operations.get(op), (int) ((en_microSec - st_microSec)));
 
-        /*
-         // original code from https://github.com/akon-dey/YCSB/blob/master/core/src/main/java/com/yahoo/ycsb/workloads/ClosedEconomyConstantAccountWorkload.java
-         if (ret) {
-         _measurements.reportReturnCode(_operations.get(op), -1);
-         } else {
-         _measurements.reportReturnCode(_operations.get(op), 0);
-         }
-         */
-        /*
-         * @NOTE :: Shegufta Bakht Ahsan
-         * @NOTE :: above commented portion is the original code written by AKON.. It was written in 2014
-         * @NOTE :: in 2015 YCSB, reportReturnCode has been replaced by reportStatus
-         * @NOTE :: also, the new function takes a STATUS value
-         * @NOTE :: I have replaced -1 with Status.OK, and 0 with Status.ERROR
-         * @NOTE :: I am not sure whether it will work fine or not...
-         * @NOTE :: I have to double check it !
-         */
-        /*
-         //Shegufta B Ahsan :: I have commented out this part of Akon's code. This things are called
-         //from the corresponding functions of DBWrapper.java... e.g. _measurements.reportStatus("INSERT", res);
-         //hence, most probably it is redundent..... BUT im not 100% sure right now.... Needs more thorough checking and understanding of whats going on !
-         if (ret) {
-         _measurements.reportStatus(_operations.get(op), Status.OK);
-         } else {
-         _measurements.reportStatus(_operations.get(op), Status.ERROR);
-         }
-         */
+        if (ret) {
+            _measurements.reportStatus(_operations.get(op), Status.OK);
+        } else {
+            _measurements.reportStatus(_operations.get(op), Status.UNEXPECTED_STATE);
+        }
+
         actualopcount.addAndGet(1);
 
         return ret;
+
     }
 
     int nextKeynum()
@@ -728,137 +672,15 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
     {
         // choose a random key
         int keynum = nextKeynum();
-
         String keyname = buildKeyName(keynum);
-
-        HashSet<String> fields = null;
-
-        if (!readallfields) {
-            // read a random field
-            String fieldname = "field" + fieldchooser.nextString();
-
-            fields = new HashSet<String>();
-            fields.add(fieldname);
-        }
+        
+        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
+        HashSet<String> fields = new HashSet<String>();
+        fields.add(fieldname);
 
         HashMap<String, ByteIterator> firstvalues = new HashMap<String, ByteIterator>();
 
         return (db.read(table, keyname, fields, firstvalues).equals(Status.OK));
-    }
-
-    /*
-     *@author: shegufta
-     * A customer will be rewarded with money transferred from bank account (provided that there are sufficient money available in the bank account)
-     */
-    public boolean doTransactionRewardCustomer(DB db)
-    {
-        //@TODO:: do we need to disable autocommit and then explicitely call commit?
-
-        String operationName = STATUS_NAME_REWARD_CUSTOMER;
-        printTrace("\n-state START -op "+operationName);
-        if (bankACCOUNT.decrementAndGet() < 0) // decrement Bank account and check if it is greater than zero... if not, increment it
-        {// Bank does not have sufficient money !
-            bankACCOUNT.incrementAndGet();
-            _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-            printTrace("-state END -success ERROR -op "+operationName+"\n");
-            return false;
-        }
-
-        int customerAcc = nextKeynum();
-        String customerKey = buildKeyName(customerAcc);
-        HashMap<String, ByteIterator> customerValues = new HashMap<String, ByteIterator>();
-
-        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
-        HashSet<String> fields = new HashSet<String>();
-        fields.add(fieldname);
-
-        try {
-            // do the transaction
-            long st = System.currentTimeMillis();
-            if (db.read(table, customerKey, fields, customerValues).equals(Status.OK)) {
-
-                int increasedAmount = 1 + Integer.parseInt(customerValues.get("field0").toString());
-
-                customerValues.put("field0", new StringByteIterator(Integer.toString(increasedAmount)));
-
-                if (db.update(table, customerKey, customerValues).equals(Status.OK)) {
-                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.OK);
-                    long en = System.currentTimeMillis();
-                    Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, (int) (en - st));
-                    printTrace("transfer -from bankACCOUNT -to "+customerKey);
-                    printTrace("current money -from $"+bankACCOUNT.get()+" -to $"+increasedAmount);
-                    printTrace("-state END -success OK -op "+operationName+"\n");
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("\n" + e.toString() + "\n");
-        }
-
-        bankACCOUNT.incrementAndGet();
-        // if the code works perfectly, it should not reach this point...
-        // it will reach this point only if there is something wrong
-        // which means it is not able to perform the update
-        // hence increment the bankACCOUNT to set it as it was before.
-        _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op "+operationName+"\n");
-        return false;
-    }
-
-    /*
-     *@author: shegufta
-     *Customer will pay an amount to the bank account. Provided that customer has sufficient money in his account
-     */
-    public boolean doTransactionPayToBank(DB db)
-    {
-        //@TODO:: do we need to disable autocommit and then explicitely call commit?
-
-        String operationName = STATUS_NAME_PAY_TO_BANK;
-        printTrace("\n-state START -op "+operationName);
-        int customerAcc = nextKeynum();
-        String customerKey = buildKeyName(customerAcc);
-        HashMap<String, ByteIterator> customerValues = new HashMap<String, ByteIterator>();
-
-        String fieldname = "field0"; //+ fieldchooser.nextString(); //shegufta:: here we will alwys use field0... so there is no need to call fieldchooser !
-        HashSet<String> fields = new HashSet<String>();
-        fields.add(fieldname);
-
-        try {
-            // do the transaction
-            long st = System.currentTimeMillis();
-            if (db.read(table, customerKey, fields, customerValues).equals(Status.OK)) {
-                int decreasedAmount = Integer.parseInt(customerValues.get("field0").toString()) - 1;
-                if (decreasedAmount < 0) {// client does not have enough money !
-                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, Status.UNEXPECTED_STATE);
-                    printTrace("-state END -success ERROR -op "+operationName+"\n");
-                    return false;
-                }
-
-                customerValues.put("field0", new StringByteIterator(Integer.toString(decreasedAmount)));
-
-                if (db.update(table, customerKey, customerValues).equals(Status.OK)) {
-                    bankACCOUNT.incrementAndGet();// add the amount to bankACCOUNT
-                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, Status.OK);
-                    long en = System.currentTimeMillis();
-                    Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_PAY_TO_BANK, (int) (en - st));
-                    printTrace("transfer -from "+customerKey+" -to bankACCOUNT");
-                    printTrace("current money -from $"+decreasedAmount+" -to $"+bankACCOUNT.get());
-                    printTrace("-state END -success OK -op "+operationName+"\n");
-                    return true;
-                }
-
-            }
-        } catch (Exception e) {
-            System.out.println("\n" + e.toString() + "\n");
-        }
-
-        // if the code works perfectly, it should not reach this point...
-        // it will reach this point only if there is something wrong
-        // which means it is not able to perform the read/update etc.
-        // hence increment the bankACCOUNT to set it as it was before.
-        _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op "+operationName+"\n");
-        return false;
     }
 
     /*
@@ -870,25 +692,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         //@TODO:: do we need to disable autocommit and then explicitely call commit?
 
         String operationName = STATUS_NAME_TRANSFER_BETWEEN_ACC;
-        printTrace("\n-state START -op "+operationName);
-        
-        // choose a random key
-        int first = nextKeynum();
-        int second = first;
-        while (second == first) {
-            second = nextKeynum();
-        }
-        /* it was done in the main YCSB+T code, but I dont think it is necessary right now.
-         // We want to move money in one direction only, to ensure transactions
-         // don't 'cancel' one-another out, i.e. T1: A -> B, and concurrently
-         // T2: B -> A. Hence, we only transfer from higher accounts to lower
-         // accounts.
-         if (first < second) {
-         int temp = first;
-         first = second;
-         second = temp;
-         }
-         */
+        printTrace("\n-state START -op " + operationName);
 
         int customerFirstAcc = nextKeynum();
         int customerSecondAcc = nextKeynum();
@@ -916,12 +720,11 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
         try {
             // do the transaction
-            long st = System.currentTimeMillis();
 
             if (db.read(table, customerFirstKey, fields, customerFirstValues).equals(Status.OK) && db.read(table, customerSecondKey, fields, customerSecondValues).equals(Status.OK)) {
                 int firstCustomerBalance = Integer.parseInt(customerFirstValues.get("field0").toString());
                 int secondCustomerBalance = Integer.parseInt(customerSecondValues.get("field0").toString());
-                
+
                 String from;
                 String to;
                 int amountOfTo;
@@ -930,38 +733,37 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
                 if (0 < firstCustomerBalance) {
                     firstCustomerBalance--;
                     secondCustomerBalance++;
-                    
+
                     to = customerSecondKey;
                     from = customerFirstKey;
                     amountOfTo = secondCustomerBalance;
                     amountOfFrom = firstCustomerBalance;
-                            
+
                 } else if (0 < secondCustomerBalance) {
-                    
+
                     firstCustomerBalance++;
                     secondCustomerBalance--;
-                    
+
                     to = customerFirstKey;
                     from = customerSecondKey;
                     amountOfTo = firstCustomerBalance;
                     amountOfFrom = secondCustomerBalance;
-                    
+
                 } else {// both of them are bankrupt !
-                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
-                    printTrace("-state END -success ERROR -op "+operationName+"\n");
+                    //_measurements.reportStatus(ClosedEconomyTrnsfrBtnAccWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
+                    printTrace("-state END -success ERROR -op " + operationName + "\n");
                     return false;
                 }
 
+                customerFirstValues.clear();
                 customerFirstValues.put("field0", new StringByteIterator(Integer.toString(firstCustomerBalance)));
+                customerSecondValues.clear();
                 customerSecondValues.put("field0", new StringByteIterator(Integer.toString(secondCustomerBalance)));
 
                 if ((db.update(table, customerFirstKey, customerFirstValues).equals(Status.OK)) && (db.update(table, customerSecondKey, customerSecondValues).equals(Status.OK))) {
-                    _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.OK);
-                    long en = System.currentTimeMillis();
-                    Measurements.getMeasurements().measure(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, (int) (en - st));
-                    printTrace("transfer -from "+ from +" -to "+to);
-                    printTrace("current money -from $"+amountOfFrom+" -to $"+amountOfTo);
-                    printTrace("-state END -success OK -op "+operationName+"\n");
+                    printTrace("transfer -from " + from + " -to " + to);
+                    printTrace("current money -from $" + amountOfFrom + " -to $" + amountOfTo);
+                    printTrace("-state END -success OK -op " + operationName + "\n");
 
                     return true;
                 }
@@ -972,8 +774,8 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
             // it will reach this point only if there is something wrong
             // which means it is not able to perform the read/update etc.
             // hence increment the bankACCOUNT to set it as it was before.
-            _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
-            printTrace("-state END -success ERROR -op "+operationName+"\n");
+            //_measurements.reportStatus(ClosedEconomyTrnsfrBtnAccWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
+            printTrace("-state END -success ERROR -op " + operationName + "\n");
             return false;
         } catch (Exception e) {
             System.out.println("\n" + e.toString() + "\n");
@@ -983,123 +785,9 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         // it will reach this point only if there is something wrong
         // which means it is not able to perform the read/update etc.
         // hence increment the bankACCOUNT to set it as it was before.
-        _measurements.reportStatus(ClosedEconomyConstantAccountWorkload.STATUS_NAME_REWARD_CUSTOMER, Status.UNEXPECTED_STATE);
-        printTrace("-state END -success ERROR -op "+operationName+"\n");
+        //_measurements.reportStatus(ClosedEconomyTrnsfrBtnAccWorkload.STATUS_NAME_TRANSFER_BETWEEN_ACC, Status.UNEXPECTED_STATE);
+        printTrace("-state END -success ERROR -op " + operationName + "\n");
         return false;
-    }
-
-    public boolean doTransactionReadModifyWrite(DB db)
-    {
-        // choose a random key
-        int first = nextKeynum();
-        int second = first;
-        while (second == first) {
-            second = nextKeynum();
-        }
-        // We want to move money in one direction only, to ensure transactions
-        // don't 'cancel' one-another out, i.e. T1: A -> B, and concurrently
-        // T2: B -> A. Hence, we only transfer from higher accounts to lower
-        // accounts.
-        if (first < second) {
-            int temp = first;
-            first = second;
-            second = temp;
-        }
-
-        String firstkey = buildKeyName(first);
-        String secondkey = buildKeyName(second);
-
-        HashSet<String> fields = null;
-
-        if (!readallfields) {
-            // read a random field
-            String fieldname = "field" + fieldchooser.nextString();
-
-            fields = new HashSet<String>();
-            fields.add(fieldname);
-        }
-
-        HashMap<String, ByteIterator> firstvalues = new HashMap<String, ByteIterator>();
-        HashMap<String, ByteIterator> secondvalues = new HashMap<String, ByteIterator>();
-
-        // do the transaction
-        long st = System.currentTimeMillis();
-
-        if (db.read(table, firstkey, fields, firstvalues).equals(Status.OK) && db.read(table, secondkey, fields, secondvalues).equals(Status.OK)) {
-            try {
-                int firstamount = Integer.parseInt(firstvalues.get("field0")
-                        .toString());
-                int secondamount = Integer.parseInt(secondvalues.get("field0")
-                        .toString());
-
-                if (firstamount > 0) {
-                    firstamount--;
-                    secondamount++;
-                }
-
-                firstvalues.put("field0",
-                        new StringByteIterator(Integer.toString(firstamount)));
-                secondvalues.put("field0",
-                        new StringByteIterator(Integer.toString(secondamount)));
-
-                boolean isUpdateFirst = db.update(table, firstkey, firstvalues).equals(Status.OK);
-                boolean isUpdateSecond = db.update(table, secondkey, secondvalues).equals(Status.OK);
-                if ((!isUpdateFirst) || (!isUpdateSecond)) {
-                    return false;
-                }
-
-                long en = System.currentTimeMillis();
-
-                Measurements.getMeasurements().measure("READ-MODIFY-WRITE", (int) (en - st));
-            } catch (NumberFormatException e) {
-                return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    public boolean doTransactionScan(DB db)
-    {
-        // choose a random key
-        int keynum = nextKeynum();
-
-        String startkeyname = buildKeyName(keynum);
-
-        // choose a random scan length
-        int len = scanlength.nextInt();
-
-        HashSet<String> fields = null;
-
-        if (!readallfields) {
-            // read a random field
-            String fieldname = "field" + fieldchooser.nextString();
-
-            fields = new HashSet<String>();
-            fields.add(fieldname);
-        }
-
-        return (db.scan(table, startkeyname, len, fields, new Vector<HashMap<String, ByteIterator>>()).equals(Status.OK));
-    }
-
-    public boolean doTransactionUpdate(DB db)
-    {
-        // choose a random key
-        int keynum = nextKeynum();
-
-        String keyname = buildKeyName(keynum);
-
-        HashMap<String, ByteIterator> values;
-
-        if (writeallfields) {
-            // new data for all the fields
-            values = buildValues();
-        } else {
-            // update a random field
-            values = buildUpdate();
-        }
-
-        return (db.update(table, keyname, values).equals(Status.OK));
     }
 
     public boolean doTransactionInsert(DB db)
@@ -1129,7 +817,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         System.out.println("\nValidating data");
         HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
 
-        int counted_sum = this.bankACCOUNT.get();
+        int counted_sum = 0;//this.bankACCOUNT.get();
 
         try {
             for (int i = 0; i < recordcount; i++) {
@@ -1152,8 +840,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
         System.out.println("-------------------------");
         System.out.println("[Initial TOTAL CASH], " + totalcash);
         System.out.println("[After Operation, TOTAL COUNTED CASH], " + counted_sum);
-        System.out.println("[After Operation, cash in bankAccount ], " + this.bankACCOUNT);
-        System.out.println("[After Operation, cash in customersAccounts ], " + (counted_sum - this.bankACCOUNT.get()));
+
         int count = actualopcount.intValue();
         System.out.println("[ACTUAL OPERATIONS], " + count);
         System.out.println("[ANOMALY SCORE], " + Math.abs((totalcash - counted_sum) / (1.0 * count)));
@@ -1161,12 +848,6 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
         if (counted_sum != totalcash) {
             System.out.println("Validation failed");
-            System.out.println("KNOWN ISSUE: Here the bankAccount variable is not stored in database. Rather it is initialized"
-                    + "each time the program starts. Hence, if you run the program several times but dont create a frash table"
-                    + "and load fresh content in that table, in that case the program might shows validaton error for the later runs."
-                    + "The reason behind is that, Say, each time when the program runs, the variable bankAccount initializes with $100."
-                    + "Now, say after the first run, bankAccount=$99. But when you run the program for the second time, as bankAcount"
-                    + "is not being stored in a database, it will again initialize with $100");
             System.out.println("-------------------------\n");
             return false;
         } else {
@@ -1180,8 +861,7 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 
 
 /*
-# Sample Workload File
-
+#Sample Workload File
 # Copyright (c) 2010 Yahoo! Inc. All rights reserved.                                                                                                                             
 #                                                                                                                                                                                 
 # Licensed under the Apache License, Version 2.0 (the "License"); you                                                                                                             
@@ -1207,25 +887,24 @@ public class ClosedEconomyConstantAccountWorkload extends Workload
 #   Request distribution: zipfian
 
 fieldcount=1
-readallfields=false
 
 printTransactionTrace = false
 
 recordcount=10
-operationcount=10
-workload=com.yahoo.ycsb.workloads.ClosedEconomyConstantAccountWorkload
+operationcount=100
+workload=com.yahoo.ycsb.workloads.ClosedEconomyTrnsfrBtnAccWorkload
 
 initialcash=2000
 
-
-paytobankproportion=0.34
-rewardcustomerproportion=0.33
-transferbetweencustomerproportion=0.33
-readproportion=0.0
-updateproportion=0.0
-scanproportion=0
-insertproportion=0
-
 requestdistribution=zipfian
+
+transferbetweencustomerproportion=0.5
+readproportion=0.5
+
+#paytobankproportion=0.34
+#rewardcustomerproportion=0.33
+#updateproportion=0.0
+#scanproportion=0
+#insertproportion=0
 
 */
