@@ -887,19 +887,21 @@ public class ClosedEconomyTrnsfrBtnAccWorkload extends Workload
 #   Request distribution: zipfian
 
 fieldcount=1
+threadcount = 1
 
 printTransactionTrace = false
 
-recordcount=10
-operationcount=100
+recordcount=100
+operationcount=1000
 workload=com.yahoo.ycsb.workloads.ClosedEconomyTrnsfrBtnAccWorkload
 
 initialcash=2000
 
 requestdistribution=zipfian
+#requestdistribution=uniform
 
-transferbetweencustomerproportion=0.5
-readproportion=0.5
+transferbetweencustomerproportion=0.0
+readproportion=1.0
 
 #paytobankproportion=0.34
 #rewardcustomerproportion=0.33
